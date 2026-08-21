@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍕 FoodExpress</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ==========================================
+    TOAST
+    ========================================== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ==========================================
+    CONTAINER
+    ========================================== -->
+    <div class="container">
+
+        <!-- ==========================================
+        AUTH: LOGIN
+        ========================================== -->
+        <div class="auth-page" id="loginPage">
+            <div class="logo">🍕</div>
+            <div class="title">FoodExpress</div>
+            <div class="subtitle">Onlayn restoran yetkazib berish</div>
+
+            <div class="input-group">
+                <label>Ism</label>
+                <input type="text" id="loginName" placeholder="Ismingiz" autocomplete="name">
+            </div>
+            <div class="input-group">
+                <label>Telefon</label>
+                <input type="tel" id="loginPhone" placeholder="+998 90 123 45 67" autocomplete="tel">
+            </div>
+
+            <button class="btn btn-primary" onclick="handleLogin()">Kirish</button>
+
+            <div class="divider">
+                <span>yoki</span>
+            </div>
+
+            <div class="social-login">
+                <button class="telegram" onclick="loginWithTelegram()"><i class="fab fa-telegram-plane"></i></button>
+                <button class="google" onclick="showToast('Google orqali kirish tez orada!', 'info')"><i class="fab fa-google"></i></button>
+            </div>
+
+            <button class="switch-btn" onclick="showRegister()">Ro'yxatdan o'tish →</button>
+        </div>
+
+        <!-- ==========================================
+        AUTH: REGISTER
+        ========================================== -->
+        <div class="auth-page hidden" id="registerPage">
+            <div class="logo">📝</div>
+            <div class="title">Ro'yxatdan o'tish</div>
+            <div class="subtitle">Bonuslar va chegirmalardan foydalaning</div>
+
+            <div class="input-group">
+                <label>Ism</label>
+                <input type="text" id="regName" placeholder="Ismingiz" autocomplete="name">
+            </div>
+            <div class="input-group">
+                <label>Telefon</label>
+                <input type="tel" id="regPhone" placeholder="+998 90 123 45 67" autocomplete="tel">
+            </div>
+            <div class="input-group">
+                <label>Parol</label>
+                <input type="password" id="regPassword" placeholder="Parol" autocomplete="new-password">
+            </div>
+
+            <button class="btn btn-primary" onclick="handleRegister()">Ro'yxatdan o'tish</button>
+
+            <button class="switch-btn" onclick="showLogin()">← Kirish</button>
+        </div>
+
+        <!-- ==========================================
+        MAIN APP
+        ========================================== -->
+        <div id="mainApp">
+
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="avatar" id="profileAvatar">👤</div>
+                <div class="name" id="profileName">Mehmon</div>
+                <div class="phone" id="profilePhone">Telefon qo'shilmagan</div>
+            </div>
+
+            <!-- Stats -->
+            <div class="profile-stats">
+                <div class="stat">
+                    <div class="value" id="statOrders">0</div>
+                    <div class="label">Buyurtma</div>
+                </div>
+                <div class="stat">
+                    <div class="value" id="statBonus">0</div>
+                    <div class="label">Bonus</div>
+                </div>
+                <div class="stat">
+                    <div class="value" id="statSpent">0</div>
+                    <div class="label">Sarflangan</div>
+                </div>
+            </div>
+
+            <!-- Pages -->
+            <div class="page active" id="page-home">
+                <div class="section-title">🍽 Bugungi taomlar</div>
+                <div class="menu-grid" id="menuGrid"></div>
+            </div>
+
+            <div class="page" id="page-orders">
+                <div class="section-title">📋 Buyurtmalarim</div>
+                <div id="ordersList"></div>
+            </div>
+
+            <div class="page" id="page-profile">
+                <div class="section-title">👤 Profil</div>
+                <button class="btn btn-danger" onclick="logout()" style="margin-top:8px;">Chiqish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    CART FLOAT
+    ========================================== -->
+    <div class="cart-float" id="cartFloat">
+        <div class="left">
+            <div class="count" id="cartCount">0</div>
+            <div>
+                <div style="font-size:11px;opacity:0.5;">Savat</div>
+                <div class="total" id="cartTotal">0 so'm</div>
+            </div>
+        </div>
+        <button class="checkout-btn" onclick="openCheckout()">Buyurtma</button>
+    </div>
+
+    <!-- ==========================================
+    CHECKOUT SHEET
+    ========================================== -->
+    <div class="sheet-overlay" id="checkoutSheet">
+        <div class="sheet">
+            <div class="handle"></div>
+            <div class="header">
+                <div class="title">🛒 Savat</div>
+                <button class="close" onclick="closeSheet()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="cartItemsList"></div>
+            <div class="cart-total">
+                Jami: <span id="checkoutTotal">0 so'm</span>
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="tel" id="checkoutPhone" placeholder="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <textarea id="checkoutAddress" rows="2" placeholder="To'liq manzilni kiriting"></textarea>
+            </div>
+            <div class="form-group">
+                <label>💳 To'lov usuli</label>
+                <select id="checkoutPayment">
+                    <option value="cash">💵 Naqd pul</option>
+                    <option value="click">💳 Click</option>
+                    <option value="payme">💳 Payme</option>
+                </select>
+            </div>
+            <button class="btn-checkout" onclick="placeOrder()">✅ Buyurtmani rasmiylashtirish</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    TAB BAR
+    ========================================== -->
+    <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="home" onclick="switchTab('home')">
+            <span class="icon"><i class="fas fa-home"></i></span>
+            <span>Bosh</span>
+        </button>
+        <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">
+            <span class="icon"><i class="fas fa-receipt"></i></span>
+            <span>Buyurtmalar</span>
+        </button>
+        <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')">
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>Profil</span>
+        </button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
