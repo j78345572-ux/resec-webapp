@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏪 Admin Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           GLOBAL
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #FF5A3A;
+            --primary-dark: #E64A2E;
+            --primary-gradient: linear-gradient(135deg, #FF5A3A, #FF2D00);
+            --bg: #F1F3F5;
+            --surface: #FFFFFF;
+            --surface-2: #F8F9FA;
+            --text: #1A1A2E;
+            --text-2: #4A4A5A;
+            --text-3: #8A8A9E;
+            --border: #EEEEF4;
+            --success: #00C853;
+            --danger: #FF1744;
+            --warning: #FFB300;
+            --shadow: 0 8px 30px rgba(0,0,0,0.06);
+            --shadow-lg: 0 20px 60px rgba(0,0,0,0.1);
+            --radius: 14px;
+            --radius-lg: 20px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           AUTH
+           ============================================ */
+        #authPage {
+            display: none;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg);
+        }
+        #authPage.active { display: flex; }
+
+        .auth-container {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+        .auth-header {
+            background: var(--primary-gradient);
+            padding: 32px 24px;
+            color: white;
+            text-align: center;
+        }
+        .auth-header .logo { font-size: 48px; }
+        .auth-header .title {
+            font-size: 24px;
+            font-weight: 900;
+            margin-top: 4px;
+        }
+        .auth-header .sub {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        .auth-body { padding: 24px; }
+        .auth-body .input-group {
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .auth-body .input-group .icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-3);
+        }
+        .auth-body .input-group input,
+        .auth-body .input-group select {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            background: var(--surface-2);
+            transition: all 0.2s;
+        }
+        .auth-body .input-group input:focus,
+        .auth-body .input-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 90, 58, 0.08);
+        }
+        .auth-body .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(255, 90, 58, 0.3);
+            transition: all 0.2s;
+        }
+        .auth-body .btn-primary:active { transform: scale(0.97); }
+
+        /* ============================================
+           ADMIN APP
+           ============================================ */
+        #adminApp { display: none; }
+        #adminApp.active { display: block; }
+
+        /* ============================================
+           HEADER
+           ============================================ */
+        .admin-header {
+            background: var(--surface);
+            padding: 14px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-header .logo {
+            font-size: 18px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .admin-header .logo span { color: var(--primary); }
+        .admin-header .restaurant-info {
+            font-size: 13px;
+            color: var(--text-3);
+        }
+        .admin-header .restaurant-info strong {
+            color: var(--text);
+        }
+        .admin-header .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .admin-header .actions button {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: none;
+            background: var(--surface-2);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .admin-header .actions button:active { transform: scale(0.9); }
+        .admin-header .actions .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .admin-header .actions .badge.show { display: flex; }
+
+        /* ============================================
+           NAV
+           ============================================ */
+        .admin-nav {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            gap: 6px;
+            scrollbar-width: none;
+        }
+        .admin-nav::-webkit-scrollbar { display: none; }
+        .admin-nav .nav-item {
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            border: none;
+            background: var(--surface-2);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: inherit;
+            transition: all 0.2s;
+            color: var(--text-2);
+        }
+        .admin-nav .nav-item:active { transform: scale(0.95); }
+        .admin-nav .nav-item.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 90, 58, 0.3);
+        }
+        .admin-nav .nav-item i { margin-right: 6px; }
+
+        /* ============================================
+           PAGES
+           ============================================ */
+        .admin-page {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        .admin-page.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ============================================
+           STATS CARDS
+           ============================================ */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .stat-card .value {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--primary);
+        }
+        .stat-card .label {
+            font-size: 13px;
+            color: var(--text-3);
+            font-weight: 600;
+        }
+        .stat-card .icon {
+            font-size: 22px;
+            opacity: 0.15;
+            float: right;
+        }
+
+        /* ============================================
+           TABLE
+           ============================================ */
+        .table-wrap {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .table-wrap .row {
+            display: grid;
+            grid-template-columns: 70px 1fr 90px 110px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            gap: 8px;
+        }
+        .table-wrap .row:last-child { border-bottom: none; }
+        .table-wrap .row.header {
+            background: var(--surface-2);
+            font-weight: 700;
+            font-size: 11px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .table-wrap .row .status {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .status-new { background: #FFF0E0; color: var(--primary); }
+        .status-ready { background: #FFF3E0; color: #E65100; }
+        .status-delivering { background: #E3F2FD; color: #0D47A1; }
+        .status-delivered { background: #E8F5E9; color: var(--success); }
+        .status-cancelled { background: #FFEBEE; color: var(--danger); }
+
+        /* ============================================
+           RESTAURANTS LIST
+           ============================================ */
+        .restaurant-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+        }
+        .restaurant-card:active { transform: scale(0.98); }
+        .restaurant-card .info .name {
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .restaurant-card .info .details {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+        .restaurant-card .info .details i { margin-right: 4px; }
+        .restaurant-card .status-badge {
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-active { background: #E8F5E9; color: var(--success); }
+        .status-inactive { background: #FFEBEE; color: var(--danger); }
+        .restaurant-card .actions {
+            display: flex;
+            gap: 6px;
+        }
+        .restaurant-card .actions button {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .restaurant-card .actions button:active { transform: scale(0.85); }
+        .restaurant-card .actions .btn-edit { background: #E3F2FD; color: #0D47A1; }
+        .restaurant-card .actions .btn-delete { background: #FFEBEE; color: var(--danger); }
+        .restaurant-card .actions .btn-enter { background: #E8F5E9; color: var(--success); }
+
+        /* ============================================
+           MENU ITEMS (with image)
+           ============================================ */
+        .menu-item-admin {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            box-shadow: var(--shadow);
+        }
+        .menu-item-admin .image {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .menu-item-admin .image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .menu-item-admin .info { flex: 1; }
+        .menu-item-admin .info .name {
+            font-weight: 700;
+            font-size: 15px;
+        }
+        .menu-item-admin .info .price {
+            color: var(--primary);
+            font-weight: 800;
+        }
+        .menu-item-admin .info .category {
+            font-size: 12px;
+            color: var(--text-3);
+        }
+        .menu-item-admin .actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        .menu-item-admin .actions button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .menu-item-admin .actions button:active { transform: scale(0.85); }
+        .btn-edit { background: #E3F2FD; color: #0D47A1; }
+        .btn-delete { background: #FFEBEE; color: var(--danger); }
+
+        /* ============================================
+           TOGGLE
+           ============================================ */
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .toggle.active { background: var(--success); }
+        .toggle .dot {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .toggle.active .dot { left: 22px; }
+
+        /* ============================================
+           FORM
+           ============================================ */
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-3);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 13px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+            background: var(--surface);
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 90, 58, 0.08);
+        }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-group input[type="file"] {
+            padding: 10px;
+            background: var(--surface-2);
+        }
+
+        .btn-primary {
+            padding: 14px 24px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255, 90, 58, 0.3);
+            transition: all 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-secondary {
+            padding: 14px 24px;
+            background: var(--surface-2);
+            color: var(--text);
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:active { transform: scale(0.97); }
+        .btn-success {
+            padding: 14px 24px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-success:active { transform: scale(0.97); }
+        .btn-danger {
+            padding: 14px 24px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-danger:active { transform: scale(0.97); }
+
+        /* ============================================
+           EMPTY STATE
+           ============================================ */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-3);
+        }
+        .empty-state .icon { font-size: 56px; margin-bottom: 8px; }
+        .empty-state .title {
+            font-weight: 700;
+            font-size: 17px;
+            color: var(--text);
+        }
+
+        /* ============================================
+           MODAL
+           ============================================ */
+        #foodModal,
+        #restaurantModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+        }
+        #foodModal.active,
+        #restaurantModal.active { display: flex; }
+        .modal-content {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .modal-header h3 {
+            font-size: 20px;
+            font-weight: 900;
+        }
+        .modal-header .close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-3);
+        }
+        .modal-header .close:active { transform: scale(0.9); }
+
+        /* ============================================
+           TOAST
+           ============================================ */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 14px 24px;
+            border-radius: var(--radius);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 9999;
+            display: none;
+            animation: slideDown 0.3s ease;
+            max-width: calc(100% - 40px);
+            text-align: center;
+        }
+        .toast.show { display: block; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--text); }
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 500px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .table-wrap .row {
+                grid-template-columns: 50px 1fr 70px;
+                font-size: 13px;
+                padding: 10px 12px;
+            }
+            .form-row { grid-template-columns: 1fr; }
+            .admin-nav .nav-item { padding: 8px 12px; font-size: 12px; }
+            .restaurant-card { flex-wrap: wrap; gap: 8px; }
+            .restaurant-card .actions { width: 100%; justify-content: flex-end; }
+            .menu-item-admin { flex-wrap: wrap; }
+            .menu-item-admin .actions { width: 100%; justify-content: flex-end; }
+        }
+
+        @media (max-width: 380px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ============================================
+           IMAGE PREVIEW
+           ============================================ */
+        .image-preview {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            margin-bottom: 8px;
+            background: var(--surface-2);
+        }
+        .image-preview.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================
+    TOAST
+    ========================================== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ==========================================
+    AUTH PAGE
+    ========================================== -->
+    <div id="authPage" class="active">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="logo">🏪</div>
+                <div class="title">Admin Panel</div>
+                <div class="sub">Restoran boshqaruv tizimi</div>
+            </div>
+            <div class="auth-body">
+                <div class="input-group">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <input type="text" id="adminLogin" placeholder="Login" autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <span class="icon"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="adminPassword" placeholder="Parol" autocomplete="current-password">
+                </div>
+                <div class="input-group" id="restaurantSelectGroup" style="display:none;">
+                    <span class="icon"><i class="fas fa-store"></i></span>
+                    <select id="restaurantSelect">
+                        <option value="">Restoran tanlang</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="adminLogin()">Kirish</button>
+                <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-3);">
+                    Super Admin: admin / admin123
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    ADMIN APP
+    ========================================== -->
+    <div id="adminApp">
+
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div>
+                <div class="logo">🏪 <span id="headerTitle">Admin</span></div>
+                <div class="restaurant-info" id="headerRestaurant">
+                    <strong id="currentRestaurantName">Barcha restoranlar</strong>
+                    <span id="currentRestaurantRole" style="margin-left:8px;padding:2px 10px;border-radius:8px;font-size:11px;background:var(--surface-2);">Super Admin</span>
+                </div>
+            </div>
+            <div class="actions">
+                <button onclick="switchRestaurant()" title="Restoran o'zgartirish" id="switchRestaurantBtn">
+                    <i class="fas fa-store"></i>
+                </button>
+                <button onclick="logout()" title="Chiqish">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- NAV -->
+        <div class="admin-nav" id="adminNav">
+            <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+            <button class="nav-item" data-page="orders" onclick="switchPage('orders')">
+                <i class="fas fa-receipt"></i> Buyurtmalar
+            </button>
+            <button class="nav-item" data-page="menu" onclick="switchPage('menu')">
+                <i class="fas fa-utensils"></i> Menyu
+            </button>
+            <button class="nav-item" data-page="restaurants" onclick="switchPage('restaurants')" id="restaurantsNav">
+                <i class="fas fa-store"></i> Restoranlar
+            </button>
+            <button class="nav-item" data-page="admins" onclick="switchPage('admins')" id="adminsNav">
+                <i class="fas fa-user-shield"></i> Adminlar
+            </button>
+            <button class="nav-item" data-page="broadcast" onclick="switchPage('broadcast')">
+                <i class="fas fa-bullhorn"></i> Xabar
+            </button>
+            <button class="nav-item" data-page="settings" onclick="switchPage('settings')">
+                <i class="fas fa-cog"></i> Sozlamalar
+            </button>
+        </div>
+
+        <!-- ==========================================
+        PAGE: DASHBOARD
+        ========================================== -->
+        <div class="admin-page active" id="page-dashboard">
+            <div class="page-title"><i class="fas fa-chart-pie" style="color:var(--primary);"></i> Dashboard</div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="value" id="statNew">0</div>
+                    <div class="label">🆕 Yangi buyurtmalar</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-truck"></i></div>
+                    <div class="value" id="statDelivering">0</div>
+                    <div class="label">🚕 Yo'lda</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-money-bill"></i></div>
+                    <div class="value" id="statRevenue">0</div>
+                    <div class="label">💰 Bugungi daromad</div>
+                </div>
+                <div class="stat-card">
+                    <div class="icon"><i class="fas fa-users"></i></div>
+                    <div class="value" id="statUsers">0</div>
+                    <div class="label">👥 Jami foydalanuvchilar</div>
+                </div>
+            </div>
+
+            <div class="page-title" style="font-size:17px;margin-top:4px;">📋 So'nggi buyurtmalar</div>
+            <div class="table-wrap" id="recentOrders"></div>
+        </div>
+
+        <!-- ==========================================
+        PAGE: ORDERS
+        ========================================== -->
+        <div class="admin-page" id="page-orders">
+            <div class="page-title"><i class="fas fa-receipt" style="color:var(--primary);"></i> Buyurtmalar</div>
+
+            <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+                <button class="btn-secondary" onclick="filterOrders('all')" style="padding:8px 14px;font-size:12px;">Hammasi</button>
+                <button class="btn-secondary" onclick="filterOrders('new')" style="padding:8px 14px;font-size:12px;">🆕 Yangi</button>
+                <button class="btn-secondary" onclick="filterOrders('ready')" style="padding:8px 14px;font-size:12px;">🔥 Tayyor</button>
+                <button class="btn-secondary" onclick="filterOrders('delivering')" style="padding:8px 14px;font-size:12px;">🚕 Yo'lda</button>
+                <button class="btn-secondary" onclick="filterOrders('delivered')" style="padding:8px 14px;font-size:12px;">✅ Yetkazildi</button>
+                <button class="btn-secondary" onclick="filterOrders('cancelled')" style="padding:8px 14px;font-size:12px;">❌ Bekor</button>
+            </div>
+
+            <div class="table-wrap" id="ordersList">
+                <div class="row header">
+                    <span>#ID</span>
+                    <span>Mijoz / Taomlar</span>
+                    <span>Summa</span>
+                    <span>Holat</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        PAGE: MENU
+        ========================================== -->
+        <div class="admin-page" id="page-menu">
+            <div class="page-title"><i class="fas fa-utensils" style="color:var(--primary);"></i> Menyu boshqaruvi</div>
+
+            <button class="btn-primary" onclick="showAddFood()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi taom qo'shish
+            </button>
+
+            <div id="menuList"></div>
+        </div>
+
+        <!-- ==========================================
+        PAGE: RESTAURANTS (SUPER ADMIN ONLY)
+        ========================================== -->
+        <div class="admin-page" id="page-restaurants">
+            <div class="page-title"><i class="fas fa-store" style="color:var(--primary);"></i> Restoranlar</div>
+
+            <button class="btn-primary" onclick="showAddRestaurant()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi restoran qo'shish
+            </button>
+
+            <div id="restaurantsList"></div>
+        </div>
+
+        <!-- ==========================================
+        PAGE: ADMINS (SUPER ADMIN ONLY)
+        ========================================== -->
+        <div class="admin-page" id="page-admins">
+            <div class="page-title"><i class="fas fa-user-shield" style="color:var(--primary);"></i> Adminlar</div>
+
+            <button class="btn-primary" onclick="showAddAdmin()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi admin qo'shish
+            </button>
+
+            <div class="table-wrap" id="adminsList">
+                <div class="row header">
+                    <span>Login</span>
+                    <span>Restoran</span>
+                    <span>Rol</span>
+                    <span>Holat</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+        PAGE: BROADCAST
+        ========================================== -->
+        <div class="admin-page" id="page-broadcast">
+            <div class="page-title"><i class="fas fa-bullhorn" style="color:var(--primary);"></i> Xabar yuborish</div>
+
+            <div class="form-group">
+                <label>📢 Xabar matni</label>
+                <textarea id="broadcastText" rows="6" placeholder="Barcha foydalanuvchilarga yuboriladigan xabarni kiriting..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="sendBroadcast()">
+                <i class="fas fa-paper-plane"></i> Yuborish
+            </button>
+        </div>
+
+        <!-- ==========================================
+        PAGE: SETTINGS
+        ========================================== -->
+        <div class="admin-page" id="page-settings">
+            <div class="page-title"><i class="fas fa-cog" style="color:var(--primary);"></i> Sozlamalar</div>
+
+            <div class="form-group">
+                <label>🏪 Restoran nomi</label>
+                <input type="text" id="settingRestaurant" value="FoodExpress">
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="text" id="settingPhone" value="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <input type="text" id="settingAddress" value="Toshkent sh., Chilonzor">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🚕 Yetkazish narxi</label>
+                    <input type="number" id="settingDelivery" value="10000">
+                </div>
+                <div class="form-group">
+                    <label>💰 Bepul yetkazish (so'm)</label>
+                    <input type="number" id="settingFreeFrom" value="100000">
+                </div>
+            </div>
+            <button class="btn-primary" onclick="saveSettings()">
+                <i class="fas fa-save"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    MODAL: Add/Edit Food
+    ========================================== -->
+    <div id="foodModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="foodModalTitle">➕ Yangi taom</h3>
+                <button class="close" onclick="closeModal('foodModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>🍽 Taom nomi</label>
+                <input type="text" id="foodName" placeholder="Masalan: Osh">
+            </div>
+            <div class="form-group">
+                <label>💰 Narxi</label>
+                <input type="number" id="foodPrice" placeholder="35000">
+            </div>
+            <div class="form-group">
+                <label>📂 Kategoriya</label>
+                <input type="text" id="foodCategory" placeholder="Milliy taom">
+            </div>
+            <div class="form-group">
+                <label>📝 Tavsif</label>
+                <textarea id="foodDesc" rows="2" placeholder="Qo'y go'shti, sabzi, guruch"></textarea>
+            </div>
+            <div class="form-group">
+                <label>😊 Emoji</label>
+                <input type="text" id="foodEmoji" placeholder="🍚">
+            </div>
+            <div class="form-group">
+                <label>🖼 Rasm (URL)</label>
+                <input type="text" id="foodImage" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-group">
+                <label>🏷 Mahsulot kodi (SKU)</label>
+                <input type="text" id="foodSku" placeholder="FOOD-001">
+            </div>
+            <div class="form-group">
+                <label>📦 Og'irligi (gramm)</label>
+                <input type="number" id="foodWeight" placeholder="500">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>⭐ Chegirma (%)</label>
+                    <input type="number" id="foodDiscount" placeholder="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>🔢 Mavjudlik</label>
+                    <input type="number" id="foodStock" placeholder="99" value="99">
+                </div>
+            </div>
+            <input type="hidden" id="foodEditId">
+            <button class="btn-primary" onclick="saveFood()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    MODAL: Add/Edit Restaurant
+    ========================================== -->
+    <div id="restaurantModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="restaurantModalTitle">🏪 Yangi restoran</h3>
+                <button class="close" onclick="closeModal('restaurantModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>🏪 Restoran nomi</label>
+                <input type="text" id="restaurantName" placeholder="Masalan: Oshxona">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <input type="text" id="restaurantAddress" placeholder="Toshkent sh., ...">
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="text" id="restaurantPhone" placeholder="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>🖼 Rasm (URL)</label>
+                <input type="text" id="restaurantImage" placeholder="https://example.com/restaurant.jpg">
+            </div>
+            <div class="form-group">
+                <label>⏰ Ish vaqti</label>
+                <input type="text" id="restaurantHours" placeholder="09:00 - 23:00">
+            </div>
+            <input type="hidden" id="restaurantEditId">
+            <button class="btn-primary" onclick="saveRestaurant()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    MODAL: Add Admin
+    ========================================== -->
+    <div id="adminModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 Yangi admin</h3>
+                <button class="close" onclick="document.getElementById('adminModal').style.display='none'">✕</button>
+            </div>
+            <div class="form-group">
+                <label>👤 Login</label>
+                <input type="text" id="adminNewLogin" placeholder="admin_username">
+            </div>
+            <div class="form-group">
+                <label>🔑 Parol</label>
+                <input type="text" id="adminNewPassword" placeholder="password123">
+            </div>
+            <div class="form-group">
+                <label>🏪 Restoran</label>
+                <select id="adminNewRestaurant"></select>
+            </div>
+            <button class="btn-primary" onclick="saveAdmin()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // ============================================
+        // TELEGRAM
+        // ============================================
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand();
+            tg.ready();
+            tg.setHeaderColor('#FFFFFF');
+            tg.setBackgroundColor('#F1F3F5'); }
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // ============================================
+        // DATA
+        // ============================================
+        let allData = {
+            // Restoranlar
+            restaurants: JSON.parse(localStorage.getItem('restaurants') || '[]'),
+            // Adminlar
+            admins: JSON.parse(localStorage.getItem('admins') || '[]'),
+            // Hozirgi admin
+            currentAdmin: JSON.parse(localStorage.getItem('currentAdmin') || 'null'),
+            // Hozirgi restoran
+            currentRestaurant: JSON.parse(localStorage.getItem('currentRestaurant') || 'null'),
+            // Buyurtmalar
+            orders: JSON.parse(localStorage.getItem('orders') || '[]'),
+            // Menyu (restoran ID bo'yicha)
+            menu: JSON.parse(localStorage.getItem('menu') || '{}'),
+            // Sozlamalar
+            settings: JSON.parse(localStorage.getItem('settings') || '{}')
+        };
+
+        let currentFilter = 'all';
+        let editingFoodId = null;
+        let editingRestaurantId = null;
+
+        // ============================================
+        // DEFAULT DATA - SUPER ADMIN
+        // ============================================
+        if (!allData.admins.length) {
+            allData.admins = [{
+                id: 1,
+                login: 'admin',
+                password: 'admin123',
+                role: 'super_admin',
+                restaurantId: null,
+                createdAt: new Date().toISOString()
+            }];
+            localStorage.setItem('admins', JSON.stringify(allData.admins));
+        }
+
+        if (!allData.restaurants.length) {
+            allData.restaurants = [{
+                id: 1,
+                name: 'FoodExpress Main',
+                address: 'Toshkent sh., Chilonzor',
+                phone: '+998 90 123 45 67',
+                image: '',
+                hours: '09:00 - 23:00',
+                status: 'active',
+                createdAt: new Date().toISOString()
+            }];
+            localStorage.setItem('restaurants', JSON.stringify(allData.restaurants));
+        }
+
+        if (!allData.menu['1']) {
+            allData.menu['1'] = [
+                { id: 1, name: 'Osh', price: 35000, category: 'Milliy', desc: "Qo'y go'shti, sabzi", emoji: '🍚',
+                    image: '', sku: 'FOOD-001', weight: 500, discount: 0, stock: 99, available: true },
+                { id: 2, name: 'Shashlik', price: 18000, category: 'Milliy', desc: 'Mol go'shti', emoji: '🍢',
+                    image: '', sku: 'FOOD-002', weight: 300, discount: 0, stock: 99, available: true },
+            ];
+            localStorage.setItem('menu', JSON.stringify(allData.menu));
+        }
+
+        // ============================================
+        // AUTH
+        // ============================================
+        function adminLogin() {
+            const login = document.getElementById('adminLogin').value.trim();
+            const pass = document.getElementById('adminPassword').value.trim();
+            const restaurantId = document.getElementById('restaurantSelect').value;
+
+            const admin = allData.admins.find(a => a.login === login && a.password === pass);
+            if (!admin) {
+                showToast('❌ Noto\'g\'ri login yoki parol!', 'error');
+                return;
+            }
+
+            // Agar oddiy admin bo'lsa, restaurant tanlashi kerak
+            if (admin.role === 'admin' && !restaurantId) {
+                showToast('❌ Iltimos, restoran tanlang!', 'error');
+                return;
+            }
+
+            const restaurant = admin.role === 'super_admin' ?
+                allData.restaurants.find(r => r.id == restaurantId) || null :
+                allData.restaurants.find(r => r.id == admin.restaurantId);
+
+            allData.currentAdmin = admin;
+            allData.currentRestaurant = restaurant;
+            localStorage.setItem('currentAdmin', JSON.stringify(admin));
+            localStorage.setItem('currentRestaurant', JSON.stringify(restaurant));
+
+            showToast('✅ Xush kelibsiz, ' + login + '!', 'success');
+            showAdminApp();
+        }
+
+        function logout() {
+            allData.currentAdmin = null;
+            allData.currentRestaurant = null;
+            localStorage.removeItem('currentAdmin');
+            localStorage.removeItem('currentRestaurant');
+            document.getElementById('authPage').classList.add('active');
+            document.getElementById('adminApp').classList.remove('active');
+            showToast('👋 Siz chiqdingiz!', 'info');
+        }
+
+        // ============================================
+        // SHOW ADMIN APP
+        // ============================================
+        function showAdminApp() {
+            const admin = allData.currentAdmin;
+            const restaurant = allData.currentRestaurant;
+
+            document.getElementById('authPage').classList.remove('active');
+            document.getElementById('adminApp').classList.add('active');
+
+            // Header
+            document.getElementById('headerTitle').textContent = admin.role === 'super_admin' ? 'Super Admin' : 'Admin';
+            document.getElementById('currentRestaurantName').textContent = restaurant ? restaurant.name :
+            'Barcha restoranlar';
+            document.getElementById('currentRestaurantRole').textContent = admin.role === 'super_admin' ? '👑 Super Admin' :
+                '👤 Admin';
+
+            // Nav - Super Admin uchun qo'shimcha menyular
+            const restaurantsNav = document.getElementById('restaurantsNav');
+            const adminsNav = document.getElementById('adminsNav');
+            if (admin.role === 'super_admin') {
+                restaurantsNav.style.display = 'block';
+                adminsNav.style.display = 'block';
+            } else {
+                restaurantsNav.style.display = 'none';
+                adminsNav.style.display = 'none';
+            }
+
+            // Switch restaurant button
+            document.getElementById('switchRestaurantBtn').style.display = admin.role === 'super_admin' ? 'block' : 'none';
+
+            updateDashboard();
+            renderOrders();
+            renderMenu();
+            renderRestaurants();
+            renderAdmins();
+            loadSettings();
+            switchPage('dashboard');
+        }
+
+        // ============================================
+        // SWITCH RESTAURANT
+        // ============================================
+        function switchRestaurant() {
+            const admin = allData.currentAdmin;
+            if (admin.role !== 'super_admin') return;
+
+            const select = document.getElementById('restaurantSelect');
+            select.innerHTML = '<option value="">Restoran tanlang</option>' +
+                allData.restaurants.map(r =>
+                    `<option value="${r.id}">${r.name}</option>`).join('');
+
+            // Show auth page with restaurant select
+            document.getElementById('adminApp').classList.remove('active');
+            document.getElementById('authPage').classList.add('active');
+            document.getElementById('restaurantSelectGroup').style.display = 'block';
+            document.getElementById('adminLogin').value = admin.login;
+            document.getElementById('adminPassword').value = admin.password;
+            showToast('🏪 Iltimos, restoran tanlang!', 'info');
+        }
+
+        // ============================================
+        // NAVIGATION
+        // ============================================
+        function switchPage(page) {
+            document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById(`page-${page}`);
+            if (target) target.classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const navBtn = document.querySelector(`[data-page="${page}"]`);
+            if (navBtn) navBtn.classList.add('active');
+
+            if (page === 'dashboard') updateDashboard();
+            if (page === 'orders') renderOrders();
+            if (page === 'menu') renderMenu();
+            if (page === 'restaurants') renderRestaurants();
+            if (page === 'admins') renderAdmins();
+
+            if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        function updateDashboard() {
+            const restaurant = allData.currentRestaurant;
+            const orders = restaurant ?
+                allData.orders.filter(o => o.restaurantId == restaurant.id) :
+                allData.orders;
+
+            const newOrders = orders.filter(o => o.status === 'new').length;
+            const delivering = orders.filter(o => o.status === 'delivering').length;
+            const revenue = orders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0);
+            const users = JSON.parse(localStorage.getItem('usersDB') || '[]');
+
+            document.getElementById('statNew').textContent = newOrders;
+            document.getElementById('statDelivering').textContent = delivering;
+            document.getElementById('statRevenue').textContent = revenue.toLocaleString() + " so'm";
+            document.getElementById('statUsers').textContent = users.length;
+
+            const recent = orders.slice(-5).reverse();
+            const container = document.getElementById('recentOrders');
+            if (!recent.length) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">📭</div><div class="title">Buyurtmalar yo\'q</div></div>';
+                return;
+            }
+            container.innerHTML = recent.map(o => `
+                <div class="row">
+                    <span>#${o.id}</span>
+                    <span><strong>${o.user}</strong><br><small>${o.items}</small></span>
+                    <span>${o.total.toLocaleString()} so'm</span>
+                    <span class="status status-${o.status}">${getStatusText(o.status)}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // ORDERS
+        // ============================================
+        function getStatusText(status) {
+            const map = { 'new': 'Yangi', 'ready': 'Tayyor', 'delivering': 'Yo\'lda', 'delivered': 'Yetkazildi',
+                'cancelled': 'Bekor' };
+            return map[status] || status;
+        }
+
+        function filterOrders(status) {
+            currentFilter = status;
+            renderOrders();
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('ordersList');
+            const restaurant = allData.currentRestaurant;
+            let orders = restaurant ?
+                allData.orders.filter(o => o.restaurantId == restaurant.id) :
+                allData.orders;
+
+            if (currentFilter !== 'all') orders = orders.filter(o => o.status === currentFilter);
+
+            if (!orders.length) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">📭</div><div class="title">Buyurtmalar yo\'q</div></div>';
+                return;
+            }
+
+            let html =
+                `<div class="row header"><span>#ID</span><span>Mijoz / Taomlar</span><span>Summa</span><span>Holat</span></div>`;
+            orders.forEach(o => {
+                html += `
+                    <div class="row">
+                        <span>#${o.id}</span>
+                        <span><strong>${o.user}</strong><br><small>${o.items}</small></span>
+                        <span>${o.total.toLocaleString()} so'm</span>
+                        <span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                            <span class="status status-${o.status}">${getStatusText(o.status)}</span>
+                            <div class="actions">
+                                ${o.status !== 'new' ? `<button class="btn-success" onclick="changeOrderStatus(${o.id}, 'new')" title="Yangi">🆕</button>` : ''}
+                                ${o.status !== 'ready' ? `<button class="btn-warning" onclick="changeOrderStatus(${o.id}, 'ready')" title="Tayyor">🔥</button>` : ''}
+                                ${o.status !== 'delivering' ? `<button class="btn-info" onclick="changeOrderStatus(${o.id}, 'delivering')" title="Yo'lda">🚕</button>` : ''}
+                                ${o.status !== 'delivered' ? `<button class="btn-success" onclick="changeOrderStatus(${o.id}, 'delivered')" title="Yetkazildi">✅</button>` : ''}
+                                ${o.status !== 'cancelled' ? `<button class="btn-danger" onclick="changeOrderStatus(${o.id}, 'cancelled')" title="Bekor">❌</button>` : ''}
+                            </div>
+                        </span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function changeOrderStatus(id, status) {
+            const order = allData.orders.find(o => o.id === id);
+            if (!order) return;
+            order.status = status;
+            localStorage.setItem('orders', JSON.stringify(allData.orders));
+            renderOrders();
+            updateDashboard();
+            if (tg?.sendData) {
+                tg.sendData(JSON.stringify({ action: 'order_status_changed', orderId: id, status: status }));
+            }
+            showToast(`✅ Buyurtma #${id} — ${getStatusText(status)}`, 'success');
+        }
+
+        // ============================================
+        // MENU (with image, SKU, weight, discount, stock)
+        // ============================================
+        function renderMenu() {
+            const container = document.getElementById('menuList');
+            const restaurant = allData.currentRestaurant;
+
+            if (!restaurant) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">🏪</div><div class="title">Iltimos, restoran tanlang</div></div>';
+                return;
+            }
+
+            const items = allData.menu[restaurant.id] || [];
+
+            if (!items.length) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">🍽</div><div class="title">Hali taomlar yo\'q</div></div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="menu-item-admin">
+                    <div class="image">
+                        ${item.image ? `<img src="${item.image}" alt="${item.name}">` : item.emoji || '🍽'}
+                    </div>
+                    <div class="info">
+                        <div class="name">${item.name}</div>
+                        <div>
+                            <span class="price">${item.price.toLocaleString()} so'm</span>
+                            <span class="category"> • ${item.category}</span>
+                            ${item.discount > 0 ? `<span style="color:var(--danger);font-weight:700;font-size:12px;"> -${item.discount}%</span>` : ''}
+                        </div>
+                        <div style="font-size:12px;color:var(--text-3);">
+                            ${item.desc || ''}
+                            ${item.weight ? ` • ${item.weight}g` : ''}
+                            ${item.sku ? ` • SKU: ${item.sku}` : ''}
+                            ${item.stock !== undefined ? ` • ${item.stock} dona` : ''}
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-edit" onclick="editFood(${item.id})" title="Tahrirlash"><i class="fas fa-pen"></i></button>
+                        <button class="btn-delete" onclick="deleteFood(${item.id})" title="O'chirish"><i class="fas fa-trash"></i></button>
+                        <div class="toggle ${item.available ? 'active' : ''}" onclick="toggleFood(${item.id})">
+                            <div class="dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddFood() {
+            editingFoodId = null;
+            document.getElementById('foodModalTitle').textContent = '➕ Yangi taom';
+            document.getElementById('foodName').value = '';
+            document.getElementById('foodPrice').value = '';
+            document.getElementById('foodCategory').value = '';
+            document.getElementById('foodDesc').value = '';
+            document.getElementById('foodEmoji').value = '🍽';
+            document.getElementById('foodImage').value = '';
+            document.getElementById('foodSku').value = '';
+            document.getElementById('foodWeight').value = '';
+            document.getElementById('foodDiscount').value = '0';
+            document.getElementById('foodStock').value = '99';
+            document.getElementById('foodEditId').value = '';
+            document.getElementById('foodModal').classList.add('active');
+        }
+
+        function editFood(id) {
+            const restaurant = allData.currentRestaurant;
+            if (!restaurant) return;
+
+            const items = allData.menu[restaurant.id] || [];
+            const item = items.find(f => f.id === id);
+            if (!item) return;
+
+            editingFoodId = id;
+            document.getElementById('foodModalTitle').textContent = '✏️ Taom tahrirlash';
+            document.getElementById('foodName').value = item.name;
+            document.getElementById('foodPrice').value = item.price;
+            document.getElementById('foodCategory').value = item.category;
+            document.getElementById('foodDesc').value = item.desc || '';
+            document.getElementById('foodEmoji').value = item.emoji || '🍽';
+            document.getElementById('foodImage').value = item.image || '';
+            document.getElementById('foodSku').value = item.sku || '';
+            document.getElementById('foodWeight').value = item.weight || '';
+            document.getElementById('foodDiscount').value = item.discount || 0;
+            document.getElementById('foodStock').value = item.stock || 99;
+            document.getElementById('foodEditId').value = id;
+            document.getElementById('foodModal').classList.add('active');
+        }
+
+        function saveFood() {
+            const restaurant = allData.currentRestaurant;
+            if (!restaurant) {
+                showToast('❌ Iltimos, restoran tanlang!', 'error');
+                return;
+            }
+
+            const name = document.getElementById('foodName').value.trim();
+            const price = parseInt(document.getElementById('foodPrice').value);
+            const category = document.getElementById('foodCategory').value.trim();
+            const desc = document.getElementById('foodDesc').value.trim();
+            const emoji = document.getElementById('foodEmoji').value.trim() || '🍽';
+            const image = document.getElementById('foodImage').value.trim();
+            const sku = document.getElementById('foodSku').value.trim();
+            const weight = parseInt(document.getElementById('foodWeight').value) || 0;
+            const discount = parseInt(document.getElementById('foodDiscount').value) || 0;
+            const stock = parseInt(document.getElementById('foodStock').value) || 0;
+            const editId = document.getElementById('foodEditId').value;
+
+            if (!name || !price || !category) {
+                showToast('Barcha maydonlarni to\'ldiring!', 'error');
+                return;
+            }
+
+            if (!allData.menu[restaurant.id]) allData.menu[restaurant.id] = [];
+
+            if (editId) {
+                const item = allData.menu[restaurant.id].find(f => f.id === parseInt(editId));
+                if (item) {
+                    item.name = name;
+                    item.price = price;
+                    item.category = category;
+                    item.desc = desc;
+                    item.emoji = emoji;
+                    item.image = image;
+                    item.sku = sku;
+                    item.weight = weight;
+                    item.discount = discount;
+                    item.stock = stock;
+                }
+            } else {
+                const newId = Math.max(...allData.menu[restaurant.id].map(f => f.id), 0) + 1;
+                allData.menu[restaurant.id].push({
+                    id: newId,
+                    name,
+                    price,
+                    category,
+                    desc,
+                    emoji,
+                    image,
+                    sku,
+                    weight,
+                    discount,
+                    stock,
+                    available: true
+                });
+            }
+
+            localStorage.setItem('menu', JSON.stringify(allData.menu));
+            closeModal('foodModal');
+            renderMenu();
+            showToast('✅ Taom saqlandi!', 'success');
+        }
+
+        function deleteFood(id) {
+            const restaurant = allData.currentRestaurant;
+            if (!restaurant) return;
+            if (!confirm('Bu taomni o\'chirmoqchimisiz?')) return;
+            allData.menu[restaurant.id] = (allData.menu[restaurant.id] || []).filter(f => f.id !== id);
+            localStorage.setItem('menu', JSON.stringify(allData.menu));
+            renderMenu();
+            showToast('🗑 Taom o\'chirildi!', 'success');
+        }
+
+        function toggleFood(id) {
+            const restaurant = allData.currentRestaurant;
+            if (!restaurant) return;
+            const item = (allData.menu[restaurant.id] || []).find(f => f.id === id);
+            if (item) {
+                item.available = !item.available;
+                localStorage.setItem('menu', JSON.stringify(allData.menu));
+                renderMenu();
+            }
+        }
+
+        // ============================================
+        // RESTAURANTS (SUPER ADMIN)
+        // ============================================
+        function renderRestaurants() {
+            const container = document.getElementById('restaurantsList');
+            const admin = allData.currentAdmin;
+
+            if (admin.role !== 'super_admin') {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">🔒</div><div class="title">Bu bo\'lim faqat Super Admin uchun</div></div>';
+                return;
+            }
+
+            if (!allData.restaurants.length) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">🏪</div><div class="title">Hali restoranlar yo\'q</div></div>';
+                return;
+            }
+
+            container.innerHTML = allData.restaurants.map(r => `
+                <div class="restaurant-card">
+                    <div class="info">
+                        <div class="name">${r.name}</div>
+                        <div class="details">
+                            <i class="fas fa-map-marker-alt"></i> ${r.address}
+                            <i class="fas fa-phone" style="margin-left:12px;"></i> ${r.phone}
+                            ${r.hours ? `<i class="fas fa-clock" style="margin-left:12px;"></i> ${r.hours}` : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <span class="status-badge ${r.status === 'active' ? 'status-active' : 'status-inactive'}">
+                            ${r.status === 'active' ? '✅ Faol' : '❌ Faol emas'}
+                        </span>
+                        <div class="actions">
+                            <button class="btn-edit" onclick="editRestaurant(${r.id})" title="Tahrirlash"><i class="fas fa-pen"></i></button>
+                            <button class="btn-delete" onclick="deleteRestaurant(${r.id})" title="O'chirish"><i class="fas fa-trash"></i></button>
+                            <button class="btn-enter" onclick="selectRestaurant(${r.id})" title="Kirish"><i class="fas fa-sign-in-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddRestaurant() {
+            editingRestaurantId = null;
+            document.getElementById('restaurantModalTitle').textContent = '🏪 Yangi restoran';
+            document.getElementById('restaurantName').value = '';
+            document.getElementById('restaurantAddress').value = '';
+            document.getElementById('restaurantPhone').value = '';
+            document.getElementById('restaurantImage').value = '';
+            document.getElementById('restaurantHours').value = '09:00 - 23:00';
+            document.getElementById('restaurantEditId').value = '';
+            document.getElementById('restaurantModal').classList.add('active');
+        }
+
+        function editRestaurant(id) {
+            const r = allData.restaurants.find(rest => rest.id === id);
+            if (!r) return;
+            editingRestaurantId = id;
+            document.getElementById('restaurantModalTitle').textContent = '✏️ Restoran tahrirlash';
+            document.getElementById('restaurantName').value = r.name;
+            document.getElementById('restaurantAddress').value = r.address || '';
+            document.getElementById('restaurantPhone').value = r.phone || '';
+            document.getElementById('restaurantImage').value = r.image || '';
+            document.getElementById('restaurantHours').value = r.hours || '09:00 - 23:00';
+            document.getElementById('restaurantEditId').value = id;
+            document.getElementById('restaurantModal').classList.add('active');
+        }
+
+        function saveRestaurant() {
+            const name = document.getElementById('restaurantName').value.trim();
+            const address = document.getElementById('restaurantAddress').value.trim();
+            const phone = document.getElementById('restaurantPhone').value.trim();
+            const image = document.getElementById('restaurantImage').value.trim();
+            const hours = document.getElementById('restaurantHours').value.trim();
+            const editId = document.getElementById('restaurantEditId').value;
+
+            if (!name) {
+                showToast('❌ Restoran nomini kiriting!', 'error');
+                return;
+            }
+
+            if (editId) {
+                const r = allData.restaurants.find(rest => rest.id === parseInt(editId));
+                if (r) {
+                    r.name = name;
+                    r.address = address;
+                    r.phone = phone;
+                    r.image = image;
+                    r.hours = hours;
+                }
+            } else {
+                const newId = Math.max(...allData.restaurants.map(r => r.id), 0) + 1;
+                allData.restaurants.push({
+                    id: newId,
+                    name,
+                    address,
+                    phone,
+                    image,
+                    hours,
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                });
+                // Create empty menu for new restaurant
+                allData.menu[newId] = [];
+            }
+
+            localStorage.setItem('restaurants', JSON.stringify(allData.restaurants));
+            localStorage.setItem('menu', JSON.stringify(allData.menu));
+            closeModal('restaurantModal');
+            renderRestaurants();
+            showToast('✅ Restoran saqlandi!', 'success');
+        }
+
+        function deleteRestaurant(id) {
+            if (!confirm('Bu restoran va uning barcha ma\'lumotlarini o\'chirmoqchimisiz?')) return;
+            allData.restaurants = allData.restaurants.filter(r => r.id !== id);
+            delete allData.menu[id];
+            localStorage.setItem('restaurants', JSON.stringify(allData.restaurants));
+            localStorage.setItem('menu', JSON.stringify(allData.menu));
+            renderRestaurants();
+            showToast('🗑 Restoran o\'chirildi!', 'success');
+        }
+
+        function selectRestaurant(id) {
+            const restaurant = allData.restaurants.find(r => r.id === id);
+            if (!restaurant) return;
+            allData.currentRestaurant = restaurant;
+            localStorage.setItem('currentRestaurant', JSON.stringify(restaurant));
+            document.getElementById('currentRestaurantName').textContent = restaurant.name;
+            showToast(`🏪 ${restaurant.name} ga kirdingiz!`, 'success');
+            switchPage('dashboard');
+            renderMenu();
+            updateDashboard();
+        }
+
+        // ============================================
+        // ADMINS (SUPER ADMIN)
+        // ============================================
+        function renderAdmins() {
+            const container = document.getElementById('adminsList');
+            const admin = allData.currentAdmin;
+
+            if (admin.role !== 'super_admin') {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">🔒</div><div class="title">Bu bo\'lim faqat Super Admin uchun</div></div>';
+                return;
+            }
+
+            if (!allData.admins.length) {
+                container.innerHTML =
+                    '<div class="empty-state"><div class="icon">👤</div><div class="title">Hali adminlar yo\'q</div></div>';
+                return;
+            }
+
+            let html =
+                `<div class="row header"><span>Login</span><span>Restoran</span><span>Rol</span><span>Holat</span></div>`;
+            allData.admins.forEach(a => {
+                const restaurant = a.restaurantId ? allData.restaurants.find(r => r.id == a.restaurantId) : null;
+                html += `
+                    <div class="row">
+                        <span><strong>${a.login}</strong></span>
+                        <span>${restaurant ? restaurant.name : 'Barcha'}</span>
+                        <span>${a.role === 'super_admin' ? '👑 Super Admin' : '👤 Admin'}</span>
+                        <span style="display:flex;gap:6px;align-items:center;">
+                            <span class="status-badge status-active">✅ Faol</span>
+                            ${a.role !== 'super_admin' ? `<button class="btn-danger" onclick="deleteAdmin(${a.id})" style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;font-size:12px;">🗑</button>` : ''}
+                        </span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function showAddAdmin() {
+            document.getElementById('adminModal').style.display = 'flex';
+            document.getElementById('adminNewLogin').value = '';
+            document.getElementById('adminNewPassword').value = '';
+
+            const select = document.getElementById('adminNewRestaurant');
+            select.innerHTML = '<option value="">Barcha restoranlar (Super Admin)</option>' +
+                allData.restaurants.map(r =>
+                    `<option value="${r.id}">${r.name}</option>`).join('');
+        }
+
+        function saveAdmin() {
+            const login = document.getElementById('adminNewLogin').value.trim();
+            const password = document.getElementById('adminNewPassword').value.trim();
+            const restaurantId = document.getElementById('adminNewRestaurant').value;
+
+            if (!login || !password) {
+                showToast('❌ Login va parolni kiriting!', 'error');
+                return;
+            }
+
+            if (allData.admins.find(a => a.login === login)) {
+                showToast('❌ Bu login allaqachon mavjud!', 'error');
+                return;
+            }
+
+            allData.admins.push({
+                id: Math.max(...allData.admins.map(a => a.id), 0) + 1,
+                login,
+                password,
+                role: restaurantId ? 'admin' : 'super_admin',
+                restaurantId: restaurantId || null,
+                createdAt: new Date().toISOString()
+            });
+
+            localStorage.setItem('admins', JSON.stringify(allData.admins));
+            document.getElementById('adminModal').style.display = 'none';
+            renderAdmins();
+            showToast('✅ Admin qo\'shildi!', 'success');
+        }
+
+        function deleteAdmin(id) {
+            if (!confirm('Bu adminni o\'chirmoqchimisiz?')) return;
+            allData.admins = allData.admins.filter(a => a.id !== id);
+            localStorage.setItem('admins', JSON.stringify(allData.admins));
+            renderAdmins();
+            showToast('🗑 Admin o\'chirildi!', 'success');
+        }
+
+        // ============================================
+        // BROADCAST
+        // ============================================
+        function sendBroadcast() {
+            const text = document.getElementById('broadcastText').value.trim();
+            if (!text) {
+                showToast('Xabar matnini kiriting!', 'error');
+                return;
+            }
+
+            if (tg?.sendData) {
+                tg.sendData(JSON.stringify({
+                    action: 'broadcast',
+                    message: text,
+                    restaurantId: allData.currentRestaurant?.id || null
+                }));
+            }
+
+            document.getElementById('broadcastText').value = '';
+            showToast('✅ Xabar yuborilmoqda...', 'success');
+        }
+
+        // ============================================
+        // SETTINGS
+        // ============================================
+        function loadSettings() {
+            const s = allData.settings;
+            document.getElementById('settingRestaurant').value = s.restaurant || 'FoodExpress';
+            document.getElementById('settingPhone').value = s.phone || '+998 90 123 45 67';
+            document.getElementById('settingAddress').value = s.address || 'Toshkent sh., Chilonzor';
+            document.getElementById('settingDelivery').value = s.deliveryPrice || 10000;
+            document.getElementById('settingFreeFrom').value = s.freeFrom || 100000;
+        }
+
+        function saveSettings() {
+            allData.settings = {
+                restaurant: document.getElementById('settingRestaurant').value,
+                phone: document.getElementById('settingPhone').value,
+                address: document.getElementById('settingAddress').value,
+                deliveryPrice: parseInt(document.getElementById('settingDelivery').value) || 10000,
+                freeFrom: parseInt(document.getElementById('settingFreeFrom').value) || 100000
+            };
+            localStorage.setItem('settings', JSON.stringify(allData.settings));
+
+            if (tg?.sendData) {
+                tg.sendData(JSON.stringify({
+                    action: 'settings_updated',
+                    settings: allData.settings
+                }));
+            }
+            showToast('✅ Sozlamalar saqlandi!', 'success');
+        }
+
+        // ============================================
+        // MODAL HELPERS
+        // ============================================
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Close modal on overlay click
+        document.querySelectorAll('#foodModal, #restaurantModal, #adminModal').forEach(el => {
+            el.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    this.style.display = 'none';
+                }
+            });
+        });
+
+        // ============================================
+        // INIT
+        // ============================================
+        // Check if user is logged in
+        if (allData.currentAdmin) {
+            // Restore restaurant
+            if (allData.currentRestaurant) {
+                showAdminApp();
+            } else if (allData.currentAdmin.role === 'super_admin') {
+                // Super admin without restaurant - show restaurant select
+                document.getElementById('authPage').classList.add('active');
+                document.getElementById('restaurantSelectGroup').style.display = 'block';
+                const select = document.getElementById('restaurantSelect');
+                select.innerHTML = '<option value="">Restoran tanlang</option>' +
+                    allData.restaurants.map(r =>
+                        `<option value="${r.id}">${r.name}</option>`).join('');
+                document.getElementById('adminLogin').value = allData.currentAdmin.login;
+                document.getElementById('adminPassword').value = allData.currentAdmin.password;
+            } else {
+                // Admin without restaurant - go to auth
+                document.getElementById('authPage').classList.add('active');
+            }
+        } else {
+            document.getElementById('authPage').classList.add('active');
+        }
+
+        // Enter key support
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                if (active.id === 'adminLogin' || active.id === 'adminPassword') {
+                    adminLogin();
+                }
+            }
+        });
+
+        console.log('🏪 Admin Panel ishga tushdi!');
+        console.log('👑 Super Admin: admin / admin123');
+        console.log('📦 Restoranlar:', allData.restaurants.length);
+        console.log('👤 Adminlar:', allData.admins.length);
+        console.log('🍽 Menyu:', Object.keys(allData.menu).length, 'ta restoran');
+    </script>
+
+</body>
+</html>
