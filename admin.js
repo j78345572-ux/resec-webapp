@@ -1,0 +1,1803 @@
+// ============================================
+// ADMIN JAVASCRIPT - TO'LIQ TUZATILGAN
+// ============================================
+
+// ===== TELEGRAM =====
+var tg = window.Telegram?.WebApp;
+if (tg) {
+    tg.expand();
+    tg.ready();
+    tg.setHeaderColor('#FFFFFF');
+    tg.setBackgroundColor('#F1F3F5');
+}
+
+// ===== TOAST =====
+function showToast(message, type) {
+    if (type === undefined) type = 'info';
+    var toast = document.getElementById('toast');
+    if (!toast) {
+        alert(message);
+        return;
+    }
+    toast.textContent = message;
+    toast.className = 'toast show ' + type;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function() {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// ===== DATA =====
+var adminData = {
+    restaurants: [],
+    admins: [],
+    orders: [],
+    menu: {},
+    settings: {},
+    couriers: [],
+    currentAdmin: null,
+    currentCourier: null,
+    loginAttempts: 0,
+    loginBlockedUntil: null
+};
+
+// ===== LOGIN XAVFSIZLIK =====
+function checkLoginBlock() {
+    if (adminData.loginBlockedUntil && new Date() < new Date(adminData.loginBlockedUntil)) {
+        var remaining = Math.ceil((new Date(adminData.loginBlockedUntil) - new Date()) / 1000);
+        showToast('⏳ ' + remaining + ' soniyadan keyin qayta urining!', 'error');
+        return true;
+    }
+    return false;
+}
+
+function resetLoginAttempts() {
+    adminData.loginAttempts = 0;
+    adminData.loginBlockedUntil = null;
+}
+
+function incrementLoginAttempts() {
+    adminData.loginAttempts++;
+    if (adminData.loginAttempts >= 5) {
+        adminData.loginBlockedUntil = new Date(Date.now() + 30000).toISOString();
+        showToast('⚠️ 5 ta noto\'g\'ri urinish! 30 soniya kuting.', 'error');
+    }
+}
+
+// ===== DATA YUKLASH =====
+function loadAdminData() {
+    try {
+        adminData.restaurants = JSON.parse(localStorage.getItem('restaurants') || '[]');
+        adminData.admins = JSON.parse(localStorage.getItem('admins') || '[]');
+        adminData.orders = JSON.parse(localStorage.getItem('orders') || '[]');
+        adminData.menu = JSON.parse(localStorage.getItem('menu') || '{}');
+        adminData.settings = JSON.parse(localStorage.getItem('settings') || '{}');
+        adminData.couriers = JSON.parse(localStorage.getItem('couriers') || '[]');
+        adminData.currentAdmin = JSON.parse(localStorage.getItem('currentAdmin') || 'null');
+        adminData.currentCourier = JSON.parse(localStorage.getItem('currentCourier') || 'null');
+    } catch(e) {
+        console.log('Ma\'lumotlarni yuklashda xatolik:', e);
+    }
+}
+
+// ===== DATA SAQLASH =====
+function saveAdminData() {
+    try {
+        localStorage.setItem('restaurants', JSON.stringify(adminData.restaurants));
+        localStorage.setItem('admins', JSON.stringify(adminData.admins));
+        localStorage.setItem('orders', JSON.stringify(adminData.orders));
+        localStorage.setItem('menu', JSON.stringify(adminData.menu));
+        localStorage.setItem('settings', JSON.stringify(adminData.settings));
+        localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+    } catch(e) {
+        console.log('Ma\'lumotlarni saqlashda xatolik:', e);
+    }
+}
+
+// ===== BASE64 ENCODING =====
+function encodePassword(password) {
+    return btoa(password);
+}
+
+function decodePassword(encoded) {
+    try {
+        return atob(encoded);
+    } catch(e) {
+        return encoded;
+    }
+}
+
+// ===== DEFAULT DATA =====
+function initDefaultData() {
+    var i;
+    
+    if (!adminData.admins || adminData.admins.length === 0) {
+        adminData.admins = [
+            {
+                id: 1,
+                login: 'admin',
+                password: encodePassword('admin123'),
+                role: 'super_admin',
+                restaurantId: null,
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                login: 'rest1',
+                password: encodePassword('rest123'),
+                role: 'admin',
+                restaurantId: 1,
+                createdAt: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('admins', JSON.stringify(adminData.admins));
+    }
+    
+    if (!adminData.restaurants || adminData.restaurants.length === 0) {
+        adminData.restaurants = [
+            {
+                id: 1,
+                name: 'FoodExpress Main',
+                address: 'Toshkent sh., Chilonzor',
+                phone: '+998 90 123 45 67',
+                image: '',
+                hours: '09:00 - 23:00',
+                status: 'active',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                name: 'FastFood Express',
+                address: 'Toshkent sh., Yunusobod',
+                phone: '+998 90 987 65 43',
+                image: '',
+                hours: '10:00 - 02:00',
+                status: 'active',
+                createdAt: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('restaurants', JSON.stringify(adminData.restaurants));
+    }
+    
+    if (!adminData.menu || Object.keys(adminData.menu).length === 0) {
+        adminData.menu = {};
+        adminData.menu['1'] = [
+            { id: 1, name: 'Osh', price: 35000, category: 'Milliy', desc: "Qo'y go'shti, sabzi", emoji: '🍚', image: '', sku: 'FOOD-001', weight: 500, discount: 0, stock: 99, available: true },
+            { id: 2, name: 'Shashlik', price: 18000, category: 'Milliy', desc: 'Mol go\'shti', emoji: '🍢', image: '', sku: 'FOOD-002', weight: 300, discount: 0, stock: 99, available: true }
+        ];
+        adminData.menu['2'] = [
+            { id: 3, name: 'Burger', price: 32000, category: 'Fast Food', desc: 'Dabl chizburger', emoji: '🍔', image: '', sku: 'FOOD-003', weight: 400, discount: 0, stock: 99, available: true },
+            { id: 4, name: 'Pizza', price: 45000, category: 'Fast Food', desc: 'Pepperoni', emoji: '🍕', image: '', sku: 'FOOD-004', weight: 600, discount: 0, stock: 99, available: true }
+        ];
+        localStorage.setItem('menu', JSON.stringify(adminData.menu));
+    }
+    
+    if (!adminData.couriers || adminData.couriers.length === 0) {
+        adminData.couriers = [
+            { id: 1, name: 'Ali Valiyev', phone: '+998 90 111 22 33', login: 'courier1', password: encodePassword('123456'), restaurant_id: 1, status: 'offline', latitude: null, longitude: null, rating: 4.8, total_deliveries: 0, created_at: new Date().toISOString() },
+            { id: 2, name: 'Sardor Qodirov', phone: '+998 90 222 33 44', login: 'courier2', password: encodePassword('123456'), restaurant_id: 2, status: 'offline', latitude: null, longitude: null, rating: 4.5, total_deliveries: 0, created_at: new Date().toISOString() },
+            { id: 3, name: 'Dilshod Rahimov', phone: '+998 90 333 44 55', login: 'courier3', password: encodePassword('123456'), restaurant_id: 1, status: 'offline', latitude: null, longitude: null, rating: 4.9, total_deliveries: 0, created_at: new Date().toISOString() }
+        ];
+        localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+    }
+    
+    if (!adminData.orders || adminData.orders.length === 0) {
+        adminData.orders = [
+            { id: 1001, user: 'Ali', items: 'Osh x2, Shashlik x1', total_price: 88000, status: 'new', date: '2024-01-15 14:30', restaurant_id: 1, phone: '+998 90 111 22 33', address: 'Chilonzor 5-kvartal, 12-uy' },
+            { id: 1002, user: 'Sardor', items: 'Burger x1, Cola x2', total_price: 56000, status: 'delivering', date: '2024-01-15 13:15', restaurant_id: 2, phone: '+998 90 222 33 44', address: 'Yunusobod 8-kvartal, 3-uy' },
+            { id: 1003, user: 'Dilshod', items: 'Pizza x1', total_price: 45000, status: 'delivered', date: '2024-01-15 12:00', restaurant_id: 1, phone: '+998 90 333 44 55', address: 'Mirobod 2-kocha, 15-uy' }
+        ];
+        localStorage.setItem('orders', JSON.stringify(adminData.orders));
+    }
+}
+
+var currentFilter = 'all';
+var editingFoodId = null;
+var editingRestaurantId = null;
+var editingCourierId = null;
+var foodImageData = null;
+var restaurantImageData = null;
+
+// ==========================================
+// ELEMENT HELPERS
+// ==========================================
+function getEl(id) {
+    return document.getElementById(id);
+}
+
+function getVal(id) {
+    var el = getEl(id);
+    return el ? el.value : '';
+}
+
+function setVal(id, val) {
+    var el = getEl(id);
+    if (el) el.value = val;
+}
+
+function setText(id, text) {
+    var el = getEl(id);
+    if (el) el.textContent = text;
+}
+
+function hideEl(id) {
+    var el = getEl(id);
+    if (el) el.style.display = 'none';
+}
+
+function showEl(id) {
+    var el = getEl(id);
+    if (el) el.style.display = '';
+}
+
+// ==========================================
+// USER HELPERS
+// ==========================================
+function getCurrentUser() {
+    if (adminData.currentAdmin) return adminData.currentAdmin;
+    if (adminData.currentCourier) return adminData.currentCourier;
+    return null;
+}
+
+function isSuperAdmin() {
+    var user = getCurrentUser();
+    return user && user.role === 'super_admin';
+}
+
+function isAdmin() {
+    var user = getCurrentUser();
+    return user && user.role === 'admin';
+}
+
+function isCourier() {
+    var user = getCurrentUser();
+    return user && user.role === 'courier';
+}
+
+function getCurrentRestaurantId() {
+    var user = getCurrentUser();
+    if (!user) return null;
+    if (user.role === 'super_admin') return null;
+    if (user.role === 'admin') return user.restaurantId;
+    if (user.role === 'courier') return user.restaurant_id;
+    return null;
+}
+
+function filterByRestaurant(dataArray, field) {
+    if (field === undefined) field = 'restaurant_id';
+    var user = getCurrentUser();
+    if (!user) return [];
+    if (user.role === 'super_admin') return dataArray;
+    var restId = user.restaurantId || user.restaurant_id;
+    if (!restId) return [];
+    var result = [];
+    for (var i = 0; i < dataArray.length; i++) {
+        if (dataArray[i][field] == restId) {
+            result.push(dataArray[i]);
+        }
+    }
+    return result;
+}
+
+// ==========================================
+// IMAGE PREVIEW FUNCTIONS
+// ==========================================
+function previewRestaurantImage(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var preview = getEl('restaurantImagePreview');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+        var nameEl = getEl('restaurantImageName');
+        if (nameEl) nameEl.textContent = file.name;
+        restaurantImageData = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function previewFoodImage(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var preview = getEl('foodImagePreview');
+        if (preview) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+        }
+        var nameEl = getEl('foodImageName');
+        if (nameEl) nameEl.textContent = file.name;
+        foodImageData = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// ==========================================
+// AUTH
+// ==========================================
+function adminLogin() {
+    var login = getVal('adminLogin');
+    var pass = getVal('adminPassword');
+    var i;
+    
+    if (checkLoginBlock()) return;
+    
+    if (!login || !pass) {
+        showToast('❌ Login va parolni kiriting!', 'error');
+        return;
+    }
+    
+    // 1. Adminlardan qidirish
+    var user = null;
+    for (i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].login === login) {
+            var decodedPass = decodePassword(adminData.admins[i].password);
+            if (decodedPass === pass) {
+                user = adminData.admins[i];
+                break;
+            }
+        }
+    }
+    
+    // 2. Kuryerlardan qidirish
+    if (!user) {
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].login === login) {
+                var decodedPass = decodePassword(adminData.couriers[i].password);
+                if (decodedPass === pass) {
+                    user = adminData.couriers[i];
+                    user.role = 'courier';
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (!user) {
+        incrementLoginAttempts();
+        showToast('❌ Noto\'g\'ri login yoki parol!', 'error');
+        return;
+    }
+    
+    resetLoginAttempts();
+    
+    if (user.role === 'super_admin' || user.role === 'admin') {
+        adminData.currentAdmin = user;
+        adminData.currentCourier = null;
+        localStorage.setItem('currentAdmin', JSON.stringify(user));
+        localStorage.removeItem('currentCourier');
+        showToast('✅ Xush kelibsiz, ' + login + '!', 'success');
+        showAdminApp();
+    } else if (user.role === 'courier') {
+        adminData.currentCourier = user;
+        adminData.currentAdmin = null;
+        localStorage.setItem('currentCourier', JSON.stringify(user));
+        localStorage.removeItem('currentAdmin');
+        showToast('✅ Xush kelibsiz, ' + user.name + '!', 'success');
+        showCourierApp();
+    } else {
+        showToast('❌ Noma\'lum rol!', 'error');
+    }
+}
+
+function logout() {
+    adminData.currentAdmin = null;
+    adminData.currentCourier = null;
+    localStorage.removeItem('currentAdmin');
+    localStorage.removeItem('currentCourier');
+    var authPage = getEl('authPage');
+    var adminApp = getEl('adminApp');
+    var courierApp = getEl('courierApp');
+    if (authPage) {
+        authPage.classList.add('active');
+        authPage.style.display = 'flex';
+    }
+    if (adminApp) {
+        adminApp.classList.remove('active');
+        adminApp.style.display = 'none';
+    }
+    if (courierApp) {
+        courierApp.classList.remove('active');
+        courierApp.style.display = 'none';
+    }
+    showToast('👋 Siz chiqdingiz!', 'info');
+}
+
+// ==========================================
+// SHOW ADMIN APP
+// ==========================================
+function showAdminApp() {
+    var authPage = getEl('authPage');
+    var adminApp = getEl('adminApp');
+    var courierApp = getEl('courierApp');
+    var nameEl;
+    
+    if (authPage) {
+        authPage.classList.remove('active');
+        authPage.style.display = 'none';
+    }
+    if (courierApp) {
+        courierApp.classList.remove('active');
+        courierApp.style.display = 'none';
+    }
+    if (adminApp) {
+        adminApp.classList.add('active');
+        adminApp.style.display = 'block';
+    }
+    
+    nameEl = getEl('currentRestaurantName');
+    if (nameEl) {
+        var user = getCurrentUser();
+        if (user && user.role === 'admin') {
+            var rest = findRestaurantById(user.restaurantId);
+            nameEl.textContent = '🏪 ' + (rest ? rest.name : 'Restoran topilmadi');
+        } else {
+            nameEl.textContent = '👑 Super Admin';
+        }
+    }
+    
+    // Admin bo'lsa, faqat o'z elementlarini ko'rsatish
+    var isAdminUser = isAdmin();
+    var adminNavItems = document.querySelectorAll('.admin-nav .nav-item');
+    for (var i = 0; i < adminNavItems.length; i++) {
+        var item = adminNavItems[i];
+        var page = item.getAttribute('data-page');
+        if (isAdminUser && (page === 'restaurants' || page === 'admins')) {
+            item.style.display = 'none';
+        } else if (isAdminUser && page === 'couriers') {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'block';
+        }
+    }
+    
+    updateDashboard();
+    renderRestaurants();
+    renderAdmins();
+    renderCouriers();
+    renderOrders();
+    renderMenu();
+    loadSettings();
+    updateMenuRestaurantSelect();
+    switchPage('dashboard');
+}
+
+// ==========================================
+// SHOW COURIER APP
+// ==========================================
+function showCourierApp() {
+    var authPage = getEl('authPage');
+    var adminApp = getEl('adminApp');
+    var courierApp = getEl('courierApp');
+    
+    if (authPage) {
+        authPage.classList.remove('active');
+        authPage.style.display = 'none';
+    }
+    if (adminApp) {
+        adminApp.classList.remove('active');
+        adminApp.style.display = 'none';
+    }
+    if (courierApp) {
+        courierApp.classList.add('active');
+        courierApp.style.display = 'block';
+    }
+    
+    var user = adminData.currentCourier;
+    if (user) {
+        var nameEl = getEl('courierName');
+        if (nameEl) nameEl.textContent = user.name;
+        var restEl = getEl('courierRestaurantName');
+        if (restEl) {
+            var rest = findRestaurantById(user.restaurant_id);
+            restEl.textContent = rest ? rest.name : 'Restoran topilmadi';
+        }
+        var ratingEl = getEl('courierRating');
+        if (ratingEl) ratingEl.textContent = user.rating || 0;
+        var deliveriesEl = getEl('courierDeliveries');
+        if (deliveriesEl) deliveriesEl.textContent = user.total_deliveries || 0;
+    }
+    
+    renderCourierOrders();
+}
+
+// ==========================================
+// FIND HELPERS
+// ==========================================
+function findRestaurantById(id) {
+    for (var i = 0; i < adminData.restaurants.length; i++) {
+        if (adminData.restaurants[i].id == id) {
+            return adminData.restaurants[i];
+        }
+    }
+    return null;
+}
+
+function findAdminById(id) {
+    for (var i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].id == id) {
+            return adminData.admins[i];
+        }
+    }
+    return null;
+}
+
+function findCourierById(id) {
+    for (var i = 0; i < adminData.couriers.length; i++) {
+        if (adminData.couriers[i].id == id) {
+            return adminData.couriers[i];
+        }
+    }
+    return null;
+}
+
+function findOrderById(id) {
+    for (var i = 0; i < adminData.orders.length; i++) {
+        if (adminData.orders[i].id == id) {
+            return adminData.orders[i];
+        }
+    }
+    return null;
+}
+
+function findFoodById(id, restaurantId) {
+    var items = adminData.menu[restaurantId] || [];
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].id == id) {
+            return items[i];
+        }
+    }
+    return null;
+}
+
+// ==========================================
+// NAVIGATION
+// ==========================================
+function switchPage(page) {
+    var pages = document.querySelectorAll('.admin-page');
+    var i;
+    var target;
+    var navBtns;
+    var navBtn;
+    
+    for (i = 0; i < pages.length; i++) {
+        pages[i].classList.remove('active');
+    }
+    target = getEl('page-' + page);
+    if (target) target.classList.add('active');
+    
+    navBtns = document.querySelectorAll('.admin-nav .nav-item');
+    for (i = 0; i < navBtns.length; i++) {
+        navBtns[i].classList.remove('active');
+    }
+    navBtn = document.querySelector('.admin-nav .nav-item[data-page="' + page + '"]');
+    if (navBtn) navBtn.classList.add('active');
+    
+    if (page === 'dashboard') updateDashboard();
+    if (page === 'restaurants') renderRestaurants();
+    if (page === 'admins') renderAdmins();
+    if (page === 'couriers') renderCouriers();
+    if (page === 'orders') renderOrders();
+    if (page === 'menu') {
+        updateMenuRestaurantSelect();
+        renderMenu();
+    }
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+}
+
+// ==========================================
+// DASHBOARD
+// ==========================================
+function updateDashboard() {
+    var elStatRestaurants = getEl('statRestaurants');
+    var elStatAdmins = getEl('statAdmins');
+    var elStatOrders = getEl('statOrders');
+    var elStatRevenue = getEl('statRevenue');
+    var revenue = 0;
+    var i;
+    var recent;
+    var container;
+    var statusMap;
+    var html = '';
+    var visibleOrders;
+    
+    if (isAdmin()) {
+        visibleOrders = filterByRestaurant(adminData.orders, 'restaurant_id');
+        if (elStatRestaurants) elStatRestaurants.textContent = 1;
+        if (elStatAdmins) elStatAdmins.textContent = 1;
+        if (elStatOrders) elStatOrders.textContent = visibleOrders.length;
+        for (i = 0; i < visibleOrders.length; i++) {
+            if (visibleOrders[i].status === 'delivered') {
+                revenue += visibleOrders[i].total_price;
+            }
+        }
+        if (elStatRevenue) elStatRevenue.textContent = revenue.toLocaleString() + " so'm";
+        recent = visibleOrders.slice(-5).reverse();
+    } else {
+        if (elStatRestaurants) elStatRestaurants.textContent = adminData.restaurants.length;
+        if (elStatAdmins) elStatAdmins.textContent = adminData.admins.length;
+        if (elStatOrders) elStatOrders.textContent = adminData.orders.length;
+        for (i = 0; i < adminData.orders.length; i++) {
+            if (adminData.orders[i].status === 'delivered') {
+                revenue += adminData.orders[i].total_price;
+            }
+        }
+        if (elStatRevenue) elStatRevenue.textContent = revenue.toLocaleString() + " so'm";
+        recent = adminData.orders.slice(-5).reverse();
+    }
+    
+    container = getEl('recentOrders');
+    if (!container) return;
+    
+    if (!recent.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="title">Buyurtmalar yo\'q</div></div>';
+        return;
+    }
+    
+    statusMap = { 'new': 'Yangi', 'ready': 'Tayyor', 'delivering': 'Yo\'lda', 'delivered': 'Yetkazildi', 'cancelled': 'Bekor' };
+    html = '';
+    for (i = 0; i < recent.length; i++) {
+        var o = recent[i];
+        html += '<div class="row" style="grid-template-columns:70px 1fr 90px 110px;">' +
+            '<span>#' + o.id + '</span>' +
+            '<span><strong>' + o.user + '</strong><br><small>' + o.items + '</small></span>' +
+            '<span>' + (o.total_price || o.total || 0).toLocaleString() + ' so\'m</span>' +
+            '<span class="status status-' + o.status + '">' + (statusMap[o.status] || o.status) + '</span>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+// ==========================================
+// RESTAURANTS
+// ==========================================
+function renderRestaurants() {
+    var container = getEl('restaurantsList');
+    var i;
+    var html = '';
+    var r;
+    var statusClass;
+    var statusText;
+    var visibleRestaurants;
+    
+    if (!container) return;
+    
+    if (isAdmin()) {
+        var restId = getCurrentRestaurantId();
+        var rest = findRestaurantById(restId);
+        if (rest) {
+            visibleRestaurants = [rest];
+        } else {
+            visibleRestaurants = [];
+        }
+    } else {
+        visibleRestaurants = adminData.restaurants;
+    }
+    
+    if (!visibleRestaurants.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🏪</div><div class="title">Hali restoranlar yo\'q</div></div>';
+        return;
+    }
+    
+    html = '';
+    for (i = 0; i < visibleRestaurants.length; i++) {
+        r = visibleRestaurants[i];
+        statusClass = r.status === 'active' ? 'status-active' : 'status-inactive';
+        statusText = r.status === 'active' ? '✅ Faol' : '❌ Faol emas';
+        html += '<div class="restaurant-card">' +
+            '<div class="info">' +
+                '<div class="name">' + r.name + '</div>' +
+                '<div class="details">' +
+                    '<i class="fas fa-map-marker-alt"></i> ' + (r.address || 'Manzil yo\'q') +
+                    '<i class="fas fa-phone" style="margin-left:12px;"></i> ' + (r.phone || 'Tel yo\'q') +
+                    (r.hours ? '<i class="fas fa-clock" style="margin-left:12px;"></i> ' + r.hours : '') +
+                    (r.image ? '<br><img src="' + r.image + '" style="width:50px;height:50px;border-radius:8px;object-fit:cover;margin-top:4px;">' : '') +
+                '</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                '<span class="status-badge ' + statusClass + '">' + statusText + '</span>' +
+                '<div class="actions">' +
+                    '<button class="btn-edit" onclick="editRestaurant(' + r.id + ')"><i class="fas fa-pen"></i> Tahrirlash</button>' +
+                    '<button class="btn-toggle" onclick="toggleRestaurant(' + r.id + ')">' + (r.status === 'active' ? '⏸ To\'xtatish' : '▶️ Faollashtirish') + '</button>' +
+                    '<button class="btn-delete" onclick="deleteRestaurant(' + r.id + ')"><i class="fas fa-trash"></i> O\'chirish</button>' +
+                    (isSuperAdmin() ? '<button class="btn-enter" onclick="selectRestaurant(' + r.id + ')"><i class="fas fa-sign-in-alt"></i> Kirish</button>' : '') +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function showAddRestaurant() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var title;
+    var input;
+    var nameEl;
+    var preview;
+    var modal;
+    
+    editingRestaurantId = null;
+    title = getEl('restaurantModalTitle');
+    if (title) title.textContent = '🏪 Yangi restoran';
+    setVal('restaurantName', '');
+    setVal('restaurantAddress', '');
+    setVal('restaurantPhone', '');
+    setVal('restaurantHours', '09:00 - 23:00');
+    setVal('restaurantEditId', '');
+    
+    input = getEl('restaurantImageInput');
+    if (input) input.value = '';
+    nameEl = getEl('restaurantImageName');
+    if (nameEl) nameEl.textContent = 'Fayl tanlanmagan';
+    preview = getEl('restaurantImagePreview');
+    if (preview) preview.classList.add('hidden');
+    restaurantImageData = null;
+    
+    modal = getEl('restaurantModal');
+    if (modal) modal.classList.add('active');
+}
+
+function editRestaurant(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var r = findRestaurantById(id);
+    if (!r) return;
+    var title;
+    var preview;
+    var nameEl;
+    var modal;
+    
+    editingRestaurantId = id;
+    title = getEl('restaurantModalTitle');
+    if (title) title.textContent = '✏️ Restoran tahrirlash';
+    setVal('restaurantName', r.name);
+    setVal('restaurantAddress', r.address || '');
+    setVal('restaurantPhone', r.phone || '');
+    setVal('restaurantHours', r.hours || '09:00 - 23:00');
+    setVal('restaurantEditId', id);
+    
+    preview = getEl('restaurantImagePreview');
+    nameEl = getEl('restaurantImageName');
+    if (r.image) {
+        if (preview) {
+            preview.src = r.image;
+            preview.classList.remove('hidden');
+        }
+        if (nameEl) nameEl.textContent = 'Mavjud rasm';
+        restaurantImageData = r.image;
+    } else {
+        if (preview) preview.classList.add('hidden');
+        if (nameEl) nameEl.textContent = 'Fayl tanlanmagan';
+        restaurantImageData = null;
+    }
+    
+    modal = getEl('restaurantModal');
+    if (modal) modal.classList.add('active');
+}
+
+function saveRestaurant() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var name = getVal('restaurantName');
+    var address = getVal('restaurantAddress');
+    var phone = getVal('restaurantPhone');
+    var hours = getVal('restaurantHours');
+    var editId = getVal('restaurantEditId');
+    var image = restaurantImageData || '';
+    var i;
+    var newId = 1;
+    var modal;
+    
+    if (!name) {
+        showToast('❌ Restoran nomini kiriting!', 'error');
+        return;
+    }
+    
+    if (editId) {
+        var r = findRestaurantById(parseInt(editId));
+        if (r) {
+            r.name = name;
+            r.address = address;
+            r.phone = phone;
+            r.image = image;
+            r.hours = hours;
+        }
+    } else {
+        for (i = 0; i < adminData.restaurants.length; i++) {
+            if (adminData.restaurants[i].id >= newId) newId = adminData.restaurants[i].id + 1;
+        }
+        adminData.restaurants.push({
+            id: newId,
+            name: name,
+            address: address,
+            phone: phone,
+            image: image,
+            hours: hours,
+            status: 'active',
+            createdAt: new Date().toISOString()
+        });
+        adminData.menu[newId] = [];
+        localStorage.setItem('menu', JSON.stringify(adminData.menu));
+    }
+    
+    localStorage.setItem('restaurants', JSON.stringify(adminData.restaurants));
+    modal = getEl('restaurantModal');
+    if (modal) modal.classList.remove('active');
+    renderRestaurants();
+    updateMenuRestaurantSelect();
+    showToast('✅ Restoran saqlandi!', 'success');
+}
+
+function toggleRestaurant(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var r = findRestaurantById(id);
+    if (r) {
+        r.status = r.status === 'active' ? 'inactive' : 'active';
+        localStorage.setItem('restaurants', JSON.stringify(adminData.restaurants));
+        renderRestaurants();
+        showToast('🏪 ' + r.name + ' ' + (r.status === 'active' ? 'faollashtirildi' : 'to\'xtatildi'), 'info');
+    }
+}
+
+function deleteRestaurant(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    if (!confirm('Bu restoran va uning barcha ma\'lumotlarini o\'chirmoqchimisiz?')) return;
+    
+    var newRestaurants = [];
+    for (var i = 0; i < adminData.restaurants.length; i++) {
+        if (adminData.restaurants[i].id !== id) {
+            newRestaurants.push(adminData.restaurants[i]);
+        }
+    }
+    adminData.restaurants = newRestaurants;
+    delete adminData.menu[id];
+    
+    localStorage.setItem('restaurants', JSON.stringify(adminData.restaurants));
+    localStorage.setItem('menu', JSON.stringify(adminData.menu));
+    renderRestaurants();
+    updateMenuRestaurantSelect();
+    showToast('🗑 Restoran o\'chirildi!', 'success');
+}
+
+function selectRestaurant(id) {
+    var restaurant = findRestaurantById(id);
+    if (!restaurant) return;
+    var select = getEl('menuRestaurantSelect');
+    if (select) select.value = id;
+    renderMenu();
+    showToast('🏪 ' + restaurant.name + ' ga kirdingiz!', 'success');
+    switchPage('menu');
+}
+
+// ==========================================
+// ADMINS
+// ==========================================
+function renderAdmins() {
+    var container = getEl('adminsList');
+    var i;
+    var html = '';
+    var a;
+    var restaurant;
+    var visibleAdmins;
+    
+    if (!container) return;
+    
+    if (!isSuperAdmin()) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🔒</div><div class="title">Bu bo\'lim faqat Super Admin uchun</div></div>';
+        return;
+    }
+    
+    visibleAdmins = adminData.admins;
+    
+    if (!visibleAdmins.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">👤</div><div class="title">Hali adminlar yo\'q</div></div>';
+        return;
+    }
+    
+    html = '<div class="row header" style="grid-template-columns:1fr 1fr 1fr 1fr;"><span>Login</span><span>Restoran</span><span>Rol</span><span>Holat</span></div>';
+    for (i = 0; i < visibleAdmins.length; i++) {
+        a = visibleAdmins[i];
+        restaurant = a.restaurantId ? findRestaurantById(a.restaurantId) : null;
+        html += '<div class="row" style="grid-template-columns:1fr 1fr 1fr 1fr;">' +
+            '<span><strong>' + a.login + '</strong></span>' +
+            '<span>' + (restaurant ? restaurant.name : '👑 Barcha') + '</span>' +
+            '<span>' + (a.role === 'super_admin' ? '👑 Super Admin' : '👤 Admin') + '</span>' +
+            '<span style="display:flex;gap:6px;align-items:center;">' +
+                '<span class="status-badge status-active">✅ Faol</span>' +
+                (a.role !== 'super_admin' ? '<button class="btn-danger" onclick="deleteAdmin(' + a.id + ')" style="padding:4px 10px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;">🗑 O\'chirish</button>' : '') +
+            '</span>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function showAddAdmin() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var modal = getEl('adminModal');
+    var select = getEl('adminNewRestaurant');
+    var i;
+    var options;
+    if (modal) modal.classList.add('active');
+    setVal('adminNewLogin', '');
+    setVal('adminNewPassword', '');
+    if (select) {
+        options = '<option value="">👑 Super Admin (barcha)</option>';
+        for (i = 0; i < adminData.restaurants.length; i++) {
+            options += '<option value="' + adminData.restaurants[i].id + '">' + adminData.restaurants[i].name + '</option>';
+        }
+        select.innerHTML = options;
+    }
+}
+
+function saveAdmin() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var login = getVal('adminNewLogin');
+    var password = getVal('adminNewPassword');
+    var restaurantId = getVal('adminNewRestaurant');
+    var existing = null;
+    var i;
+    var newId = 1;
+    
+    if (!login || !password) {
+        showToast('❌ Login va parolni kiriting!', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        showToast('❌ Parol kamida 6 ta belgi bo\'lishi kerak!', 'error');
+        return;
+    }
+    
+    for (i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].login === login) {
+            existing = adminData.admins[i];
+            break;
+        }
+    }
+    if (!existing) {
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].login === login) {
+                existing = adminData.couriers[i];
+                break;
+            }
+        }
+    }
+    if (existing) {
+        showToast('❌ Bu login allaqachon mavjud!', 'error');
+        return;
+    }
+    
+    for (i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].id >= newId) newId = adminData.admins[i].id + 1;
+    }
+    
+    adminData.admins.push({
+        id: newId,
+        login: login,
+        password: encodePassword(password),
+        role: restaurantId ? 'admin' : 'super_admin',
+        restaurantId: restaurantId || null,
+        createdAt: new Date().toISOString()
+    });
+    
+    localStorage.setItem('admins', JSON.stringify(adminData.admins));
+    var modal = getEl('adminModal');
+    if (modal) modal.classList.remove('active');
+    renderAdmins();
+    showToast('✅ Admin qo\'shildi!', 'success');
+}
+
+function deleteAdmin(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    if (!confirm('Bu adminni o\'chirmoqchimisiz?')) return;
+    
+    var newAdmins = [];
+    for (var i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].id !== id) {
+            newAdmins.push(adminData.admins[i]);
+        }
+    }
+    adminData.admins = newAdmins;
+    localStorage.setItem('admins', JSON.stringify(adminData.admins));
+    renderAdmins();
+    showToast('🗑 Admin o\'chirildi!', 'success');
+}
+
+// ==========================================
+// COURIERS
+// ==========================================
+function renderCouriers() {
+    var container = getEl('couriersList');
+    var i;
+    var c;
+    var restaurant;
+    var statusClass;
+    var statusText;
+    var html = '';
+    var visibleCouriers;
+    
+    if (!container) return;
+    
+    if (!isSuperAdmin()) {
+        var restId = getCurrentRestaurantId();
+        visibleCouriers = [];
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].restaurant_id == restId) {
+                visibleCouriers.push(adminData.couriers[i]);
+            }
+        }
+    } else {
+        visibleCouriers = adminData.couriers;
+    }
+    
+    if (!visibleCouriers.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🚕</div><div class="title">Hali kuryerlar yo\'q</div></div>';
+        return;
+    }
+    
+    html = '<div class="row header" style="grid-template-columns:60px 1fr 100px 80px 120px 120px;">' +
+        '<span>#ID</span><span>Ism / Restoran</span><span>Telefon</span><span>Holat</span><span>Lokatsiya</span><span>Amallar</span>' +
+    '</div>';
+    
+    for (i = 0; i < visibleCouriers.length; i++) {
+        c = visibleCouriers[i];
+        restaurant = findRestaurantById(c.restaurant_id);
+        statusClass = c.status === 'online' ? 'status-active' : 'status-inactive';
+        statusText = c.status === 'online' ? '🟢 Online' : '🔴 Offline';
+        html += '<div class="row" style="grid-template-columns:60px 1fr 100px 80px 120px 120px;">' +
+            '<span>#' + c.id + '</span>' +
+            '<span><strong>' + c.name + '</strong><br><small style="color:var(--text-3);">' + (restaurant ? restaurant.name : 'Restoran yo\'q') + '</small></span>' +
+            '<span>' + c.phone + '</span>' +
+            '<span><span class="status-badge ' + statusClass + '">' + statusText + '</span></span>' +
+            '<span>' + (c.latitude && c.longitude ? '📍 ' + c.latitude.toFixed(4) + ', ' + c.longitude.toFixed(4) : '📍 Noma\'lum') + '</span>' +
+            '<span>' +
+                '<button class="btn-edit" onclick="editCourier(' + c.id + ')" title="Tahrirlash"><i class="fas fa-pen"></i></button>' +
+                '<button class="btn-delete" onclick="deleteCourier(' + c.id + ')" title="O\'chirish"><i class="fas fa-trash"></i></button>' +
+                (isSuperAdmin() ? (c.status === 'online' ?
+                    '<button class="btn-warning" onclick="toggleCourierStatus(' + c.id + ', \'offline\')" title="Offline qilish"><i class="fas fa-pause"></i></button>' :
+                    '<button class="btn-success" onclick="toggleCourierStatus(' + c.id + ', \'online\')" title="Online qilish"><i class="fas fa-play"></i></button>'
+                ) : '') +
+            '</span>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function showAddCourier() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var title = getEl('courierModalTitle');
+    var select = getEl('courierRestaurant');
+    var i;
+    var options;
+    var modal;
+    
+    if (title) title.textContent = '🚕 Yangi kuryer';
+    setVal('courierName', '');
+    setVal('courierPhone', '');
+    setVal('courierLogin', '');
+    setVal('courierPassword', '');
+    setVal('courierEditId', '');
+    
+    if (select) {
+        options = '';
+        for (i = 0; i < adminData.restaurants.length; i++) {
+            options += '<option value="' + adminData.restaurants[i].id + '">' + adminData.restaurants[i].name + '</option>';
+        }
+        select.innerHTML = options || '<option value="">Avval restoran qo\'shing</option>';
+    }
+    
+    modal = getEl('courierModal');
+    if (modal) modal.classList.add('active');
+}
+
+function saveCourier() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var name = getVal('courierName');
+    var phone = getVal('courierPhone');
+    var login = getVal('courierLogin');
+    var password = getVal('courierPassword');
+    var restaurant_id = getVal('courierRestaurant');
+    var editId = getVal('courierEditId');
+    var existing = null;
+    var i;
+    var index = -1;
+    var newId = 1;
+    
+    if (!name || !phone || !login || !password) {
+        showToast('❌ Barcha maydonlarni to\'ldiring!', 'error');
+        return;
+    }
+    if (!restaurant_id) {
+        showToast('❌ Iltimos, restoran tanlang!', 'error');
+        return;
+    }
+    
+    for (i = 0; i < adminData.admins.length; i++) {
+        if (adminData.admins[i].login === login) {
+            existing = adminData.admins[i];
+            break;
+        }
+    }
+    if (!existing) {
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].login === login && adminData.couriers[i].id != editId) {
+                existing = adminData.couriers[i];
+                break;
+            }
+        }
+    }
+    if (existing) {
+        showToast('❌ Bu login allaqachon mavjud!', 'error');
+        return;
+    }
+    
+    if (editId) {
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].id == editId) {
+                index = i;
+                break;
+            }
+        }
+        if (index !== -1) {
+            adminData.couriers[index] = {
+                id: adminData.couriers[index].id,
+                name: name,
+                phone: phone,
+                login: login,
+                password: encodePassword(password),
+                restaurant_id: parseInt(restaurant_id),
+                status: adminData.couriers[index].status,
+                latitude: adminData.couriers[index].latitude,
+                longitude: adminData.couriers[index].longitude,
+                last_location_update: adminData.couriers[index].last_location_update,
+                rating: adminData.couriers[index].rating,
+                total_deliveries: adminData.couriers[index].total_deliveries,
+                created_at: adminData.couriers[index].created_at
+            };
+        }
+    } else {
+        for (i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].id >= newId) newId = adminData.couriers[i].id + 1;
+        }
+        adminData.couriers.push({
+            id: newId,
+            name: name,
+            phone: phone,
+            login: login,
+            password: encodePassword(password),
+            restaurant_id: parseInt(restaurant_id),
+            status: 'offline',
+            latitude: null,
+            longitude: null,
+            last_location_update: null,
+            rating: 0,
+            total_deliveries: 0,
+            created_at: new Date().toISOString()
+        });
+    }
+    
+    localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+    var modal = getEl('courierModal');
+    if (modal) modal.classList.remove('active');
+    renderCouriers();
+    showToast('✅ Kuryer saqlandi!', 'success');
+}
+
+function editCourier(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var courier = findCourierById(id);
+    if (!courier) return;
+    var title;
+    var modal;
+    
+    title = getEl('courierModalTitle');
+    if (title) title.textContent = '✏️ Kuryer tahrirlash';
+    setVal('courierName', courier.name);
+    setVal('courierPhone', courier.phone);
+    setVal('courierLogin', courier.login);
+    setVal('courierPassword', decodePassword(courier.password));
+    setVal('courierRestaurant', courier.restaurant_id);
+    setVal('courierEditId', id);
+    
+    modal = getEl('courierModal');
+    if (modal) modal.classList.add('active');
+}
+
+function deleteCourier(id) {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    if (!confirm('Bu kuryerni o\'chirmoqchimisiz?')) return;
+    
+    var newCouriers = [];
+    for (var i = 0; i < adminData.couriers.length; i++) {
+        if (adminData.couriers[i].id !== id) {
+            newCouriers.push(adminData.couriers[i]);
+        }
+    }
+    adminData.couriers = newCouriers;
+    localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+    renderCouriers();
+    showToast('🗑 Kuryer o\'chirildi!', 'success');
+}
+
+function toggleCourierStatus(id, status) {
+    var courier = findCourierById(id);
+    if (courier) {
+        courier.status = status;
+        if (status === 'online') {
+            courier.last_location_update = new Date().toISOString();
+            courier.latitude = 41.2995 + (Math.random() - 0.5) * 0.01;
+            courier.longitude = 69.2401 + (Math.random() - 0.5) * 0.01;
+        }
+        localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+        renderCouriers();
+        showToast('✅ Kuryer ' + (status === 'online' ? 'online' : 'offline') + ' qilindi!', 'success');
+    }
+}
+
+// ==========================================
+// ORDERS
+// ==========================================
+function filterOrders(status) {
+    currentFilter = status;
+    renderOrders();
+}
+
+function renderOrders() {
+    var container = getEl('ordersList');
+    var orders = [];
+    var i;
+    var o;
+    var restaurant;
+    var statusMap;
+    var html = '';
+    var actions = '';
+    var visibleOrders;
+    
+    if (!container) return;
+    
+    var restId = getCurrentRestaurantId();
+    if (restId) {
+        visibleOrders = filterByRestaurant(adminData.orders, 'restaurant_id');
+    } else {
+        visibleOrders = adminData.orders;
+    }
+    
+    if (currentFilter !== 'all') {
+        for (i = 0; i < visibleOrders.length; i++) {
+            if (visibleOrders[i].status === currentFilter) {
+                orders.push(visibleOrders[i]);
+            }
+        }
+    } else {
+        orders = visibleOrders;
+    }
+    
+    if (!orders.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="title">Buyurtmalar yo\'q</div></div>';
+        return;
+    }
+    
+    statusMap = { 'new': 'Yangi', 'ready': 'Tayyor', 'delivering': 'Yo\'lda', 'delivered': 'Yetkazildi', 'cancelled': 'Bekor' };
+    html = '<div class="row header" style="grid-template-columns:70px 1fr 90px 1fr;"><span>#ID</span><span>Restoran / Mijoz</span><span>Summa</span><span>Holat</span></div>';
+    
+    for (i = 0; i < orders.length; i++) {
+        o = orders[i];
+        restaurant = findRestaurantById(o.restaurant_id);
+        actions = '';
+        if (o.status !== 'new') actions += '<button class="btn-success" onclick="changeOrderStatus(' + o.id + ', \'new\')" title="Yangi">🆕</button>';
+        if (o.status !== 'ready') actions += '<button class="btn-warning" onclick="changeOrderStatus(' + o.id + ', \'ready\')" title="Tayyor">🔥</button>';
+        if (o.status !== 'delivering') actions += '<button class="btn-info" onclick="changeOrderStatus(' + o.id + ', \'delivering\')" title="Yo\'lda">🚕</button>';
+        if (o.status !== 'delivered') actions += '<button class="btn-success" onclick="changeOrderStatus(' + o.id + ', \'delivered\')" title="Yetkazildi">✅</button>';
+        if (o.status !== 'cancelled' && isSuperAdmin()) actions += '<button class="btn-danger" onclick="changeOrderStatus(' + o.id + ', \'cancelled\')" title="Bekor">❌</button>';
+        
+        html += '<div class="row" style="grid-template-columns:70px 1fr 90px 1fr;">' +
+            '<span>#' + o.id + '</span>' +
+            '<span><strong>' + (restaurant ? restaurant.name : 'Noma\'lum') + '</strong><br><small>' + (o.user_name || o.user) + ': ' + o.items + '</small></span>' +
+            '<span>' + (o.total_price || o.total || 0).toLocaleString() + ' so\'m</span>' +
+            '<span style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">' +
+                '<span class="status status-' + o.status + '">' + (statusMap[o.status] || o.status) + '</span>' +
+                '<div class="actions">' + actions + '</div>' +
+            '</span>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function changeOrderStatus(id, status) {
+    var order = findOrderById(id);
+    if (!order) return;
+    order.status = status;
+    localStorage.setItem('orders', JSON.stringify(adminData.orders));
+    renderOrders();
+    updateDashboard();
+    showToast('✅ Buyurtma #' + id + ' — ' + status, 'success');
+}
+
+// ==========================================
+// COURIER ORDERS
+// ==========================================
+function renderCourierOrders() {
+    var container = getEl('courierOrdersList');
+    if (!container) return;
+    
+    var user = adminData.currentCourier;
+    if (!user) return;
+    
+    var visibleOrders = [];
+    for (var i = 0; i < adminData.orders.length; i++) {
+        if (adminData.orders[i].restaurant_id == user.restaurant_id) {
+            visibleOrders.push(adminData.orders[i]);
+        }
+    }
+    
+    if (!visibleOrders.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">📭</div><div class="title">Buyurtmalar yo\'q</div></div>';
+        return;
+    }
+    
+    var statusMap = { 'new': 'Yangi', 'ready': 'Tayyor', 'delivering': 'Yo\'lda', 'delivered': 'Yetkazildi', 'cancelled': 'Bekor' };
+    var html = '';
+    for (i = 0; i < visibleOrders.length; i++) {
+        var o = visibleOrders[i];
+        var canDeliver = o.status === 'delivering';
+        html += '<div class="order-card">' +
+            '<div class="top">' +
+                '<span class="id">#' + o.id + '</span>' +
+                '<span class="status status-' + o.status + '">' + (statusMap[o.status] || o.status) + '</span>' +
+            '</div>' +
+            '<div class="items">' + o.items + '</div>' +
+            '<div class="bottom">' +
+                '<span class="total">' + (o.total_price || o.total || 0).toLocaleString() + ' so\'m</span>' +
+                '<span class="address">📍 ' + o.address + '</span>' +
+            '</div>' +
+            '<div class="bottom">' +
+                '<span style="font-size:12px;color:var(--text-3);">👤 ' + (o.user_name || o.user) + '</span>' +
+                '<span style="font-size:12px;color:var(--text-3);">📞 ' + o.phone + '</span>' +
+            '</div>' +
+            (canDeliver ? '<div class="actions"><button class="btn-deliver" onclick="courierDeliverOrder(' + o.id + ')"><i class="fas fa-check-circle"></i> Yetkazildi</button></div>' : '') +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function courierDeliverOrder(id) {
+    if (!confirm('Buyurtma #' + id + ' yetkazildi deb belgilaysizmi?')) return;
+    var order = findOrderById(id);
+    if (!order) return;
+    order.status = 'delivered';
+    localStorage.setItem('orders', JSON.stringify(adminData.orders));
+    
+    // Update courier stats
+    var user = adminData.currentCourier;
+    if (user) {
+        user.total_deliveries = (user.total_deliveries || 0) + 1;
+        localStorage.setItem('currentCourier', JSON.stringify(user));
+        // Update in couriers array
+        for (var i = 0; i < adminData.couriers.length; i++) {
+            if (adminData.couriers[i].id == user.id) {
+                adminData.couriers[i].total_deliveries = user.total_deliveries;
+                break;
+            }
+        }
+        localStorage.setItem('couriers', JSON.stringify(adminData.couriers));
+    }
+    
+    renderCourierOrders();
+    showToast('✅ Buyurtma #' + id + ' yetkazildi!', 'success');
+}
+
+// ==========================================
+// MENU
+// ==========================================
+function updateMenuRestaurantSelect() {
+    var select = getEl('menuRestaurantSelect');
+    var i;
+    var options;
+    if (!select) return;
+    options = '<option value="">Restoran tanlang</option>';
+    
+    var restId = getCurrentRestaurantId();
+    if (restId) {
+        var rest = findRestaurantById(restId);
+        if (rest) {
+            options = '<option value="' + rest.id + '">' + rest.name + '</option>';
+            select.innerHTML = options;
+            select.disabled = true;
+            return;
+        }
+    }
+    
+    select.disabled = false;
+    for (i = 0; i < adminData.restaurants.length; i++) {
+        options += '<option value="' + adminData.restaurants[i].id + '">' + adminData.restaurants[i].name + '</option>';
+    }
+    select.innerHTML = options;
+}
+
+function renderMenu() {
+    var container = getEl('menuList');
+    var restaurantId = getVal('menuRestaurantSelect');
+    var items = [];
+    var i;
+    var html = '';
+    var item;
+    
+    if (!container) return;
+    
+    if (!restaurantId) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🏪</div><div class="title">Iltimos, restoran tanlang</div></div>';
+        return;
+    }
+    
+    if (adminData.menu[restaurantId]) {
+        items = adminData.menu[restaurantId];
+    }
+    
+    if (!items.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🍽</div><div class="title">Hali taomlar yo\'q</div></div>';
+        return;
+    }
+    
+    html = '';
+    for (i = 0; i < items.length; i++) {
+        item = items[i];
+        html += '<div class="menu-item-admin">' +
+            '<div class="image">' + (item.image ? '<img src="' + item.image + '">' : '<span class="no-image">' + (item.emoji || '🍽') + '</span>') + '</div>' +
+            '<div class="info">' +
+                '<div class="name">' + item.name + '</div>' +
+                '<div><span class="price">' + item.price.toLocaleString() + ' so\'m</span><span class="category"> • ' + item.category + '</span>' + (item.discount > 0 ? '<span style="color:var(--danger);font-weight:700;"> -' + item.discount + '%</span>' : '') + '</div>' +
+                '<div style="font-size:12px;color:var(--text-3);">' + (item.desc || '') + (item.stock !== undefined ? ' • ' + item.stock + ' dona' : '') + '</div>' +
+            '</div>' +
+            '<div class="actions">' +
+                '<button class="btn-edit" onclick="editFood(' + item.id + ', \'' + restaurantId + '\')"><i class="fas fa-pen"></i> Tahrirlash</button>' +
+                '<button class="btn-delete" onclick="deleteFood(' + item.id + ', \'' + restaurantId + '\')"><i class="fas fa-trash"></i> O\'chirish</button>' +
+                '<div class="toggle ' + (item.available ? 'active' : '') + '" onclick="toggleFood(' + item.id + ', \'' + restaurantId + '\')"><div class="dot"></div></div>' +
+            '</div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function showAddFood() {
+    var restaurantId = getVal('menuRestaurantSelect');
+    var title;
+    var input;
+    var nameEl;
+    var preview;
+    var modal;
+    
+    if (!restaurantId) {
+        showToast('❌ Iltimos, restoran tanlang!', 'error');
+        return;
+    }
+    
+    editingFoodId = null;
+    title = getEl('foodModalTitle');
+    if (title) title.textContent = '➕ Yangi taom';
+    setVal('foodName', '');
+    setVal('foodPrice', '');
+    setVal('foodCategory', '');
+    setVal('foodDesc', '');
+    setVal('foodEmoji', '🍽');
+    setVal('foodDiscount', '0');
+    setVal('foodStock', '99');
+    setVal('foodEditId', '');
+    setVal('foodRestaurantId', restaurantId);
+    
+    input = getEl('foodImageInput');
+    if (input) input.value = '';
+    nameEl = getEl('foodImageName');
+    if (nameEl) nameEl.textContent = 'Fayl tanlanmagan';
+    preview = getEl('foodImagePreview');
+    if (preview) preview.classList.add('hidden');
+    foodImageData = null;
+    
+    modal = getEl('foodModal');
+    if (modal) modal.classList.add('active');
+}
+
+function editFood(id, restaurantId) {
+    var item = findFoodById(id, restaurantId);
+    if (!item) return;
+    var title;
+    var preview;
+    var nameEl;
+    var modal;
+    
+    editingFoodId = id;
+    title = getEl('foodModalTitle');
+    if (title) title.textContent = '✏️ Taom tahrirlash';
+    setVal('foodName', item.name);
+    setVal('foodPrice', item.price);
+    setVal('foodCategory', item.category);
+    setVal('foodDesc', item.desc || '');
+    setVal('foodEmoji', item.emoji || '🍽');
+    setVal('foodDiscount', item.discount || 0);
+    setVal('foodStock', item.stock || 99);
+    setVal('foodEditId', id);
+    setVal('foodRestaurantId', restaurantId);
+    
+    preview = getEl('foodImagePreview');
+    nameEl = getEl('foodImageName');
+    if (item.image) {
+        if (preview) {
+            preview.src = item.image;
+            preview.classList.remove('hidden');
+        }
+        if (nameEl) nameEl.textContent = 'Mavjud rasm';
+        foodImageData = item.image;
+    } else {
+        if (preview) preview.classList.add('hidden');
+        if (nameEl) nameEl.textContent = 'Fayl tanlanmagan';
+        foodImageData = null;
+    }
+    
+    modal = getEl('foodModal');
+    if (modal) modal.classList.add('active');
+}
+
+function saveFood() {
+    var restaurantId = getVal('foodRestaurantId');
+    var name = getVal('foodName');
+    var price = parseInt(getVal('foodPrice')) || 0;
+    var category = getVal('foodCategory');
+    var desc = getVal('foodDesc');
+    var emoji = getVal('foodEmoji') || '🍽';
+    var discount = parseInt(getVal('foodDiscount')) || 0;
+    var stock = parseInt(getVal('foodStock')) || 0;
+    var editId = getVal('foodEditId');
+    var image = foodImageData || '';
+    var items = [];
+    var i;
+    var item;
+    var newId = 1;
+    
+    if (!restaurantId) {
+        showToast('❌ Restoran ID topilmadi!', 'error');
+        return;
+    }
+    
+    if (!name || !price || !category) {
+        showToast('Barcha maydonlarni to\'ldiring!', 'error');
+        return;
+    }
+    
+    if (!adminData.menu[restaurantId]) adminData.menu[restaurantId] = [];
+    
+    if (editId) {
+        item = findFoodById(parseInt(editId), restaurantId);
+        if (item) {
+            item.name = name;
+            item.price = price;
+            item.category = category;
+            item.desc = desc;
+            item.emoji = emoji;
+            item.image = image;
+            item.discount = discount;
+            item.stock = stock;
+        }
+    } else {
+        items = adminData.menu[restaurantId];
+        for (i = 0; i < items.length; i++) {
+            if (items[i].id >= newId) newId = items[i].id + 1;
+        }
+        adminData.menu[restaurantId].push({
+            id: newId,
+            name: name,
+            price: price,
+            category: category,
+            desc: desc,
+            emoji: emoji,
+            image: image,
+            discount: discount,
+            stock: stock,
+            available: true
+        });
+    }
+    
+    localStorage.setItem('menu', JSON.stringify(adminData.menu));
+    var modal = getEl('foodModal');
+    if (modal) modal.classList.remove('active');
+    renderMenu();
+    showToast('✅ Taom saqlandi!', 'success');
+}
+
+function deleteFood(id, restaurantId) {
+    if (!confirm('Bu taomni o\'chirmoqchimisiz?')) return;
+    
+    var items = adminData.menu[restaurantId] || [];
+    var newItems = [];
+    for (var i = 0; i < items.length; i++) {
+        if (items[i].id !== id) {
+            newItems.push(items[i]);
+        }
+    }
+    adminData.menu[restaurantId] = newItems;
+    localStorage.setItem('menu', JSON.stringify(adminData.menu));
+    renderMenu();
+    showToast('🗑 Taom o\'chirildi!', 'success');
+}
+
+function toggleFood(id, restaurantId) {
+    var item = findFoodById(id, restaurantId);
+    if (item) {
+        item.available = !item.available;
+        localStorage.setItem('menu', JSON.stringify(adminData.menu));
+        renderMenu();
+    }
+}
+
+// ==========================================
+// BROADCAST
+// ==========================================
+function sendBroadcast() {
+    if (!isSuperAdmin()) {
+        showToast('❌ Bu funksiya faqat Super Admin uchun!', 'error');
+        return;
+    }
+    
+    var text = getVal('broadcastText');
+    if (!text) {
+        showToast('Xabar matnini kiriting!', 'error');
+        return;
+    }
+    if (tg && tg.sendData) {
+        tg.sendData(JSON.stringify({ action: 'broadcast', message: text }));
+    }
+    setVal('broadcastText', '');
+    showToast('✅ Xabar yuborilmoqda...', 'success');
+}
+
+// ==========================================
+// SETTINGS
+// ==========================================
+function loadSettings() {
+    var s = adminData.settings;
+    setVal('settingRestaurant', s.restaurant || 'FoodExpress');
+    setVal('settingPhone', s.phone || '+998 90 123 45 67');
+    setVal('settingAddress', s.address || 'Toshkent sh., Chilonzor');
+    setVal('settingDelivery', s.deliveryPrice || 10000);
+    setVal('settingFreeFrom', s.freeFrom || 100000);
+}
+
+function saveSettings() {
+    adminData.settings = {
+        restaurant: getVal('settingRestaurant'),
+        phone: getVal('settingPhone'),
+        address: getVal('settingAddress'),
+        deliveryPrice: parseInt(getVal('settingDelivery')) || 10000,
+        freeFrom: parseInt(getVal('settingFreeFrom')) || 100000
+    };
+    localStorage.setItem('settings', JSON.stringify(adminData.settings));
+    showToast('✅ Sozlamalar saqlandi!', 'success');
+}
+
+// ==========================================
+// MODAL HELPERS
+// ==========================================
+function closeModal(id) {
+    var el = getEl(id);
+    if (el) el.classList.remove('active');
+}
+
+var modalOverlays = document.querySelectorAll('.modal-overlay');
+var modalIndex;
+for (modalIndex = 0; modalIndex < modalOverlays.length; modalIndex++) {
+    (function(el) {
+        el.addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    })(modalOverlays[modalIndex]);
+}
+
+// ==========================================
+// INIT
+// ==========================================
+function init() {
+    var authPage;
+    var adminApp;
+    var courierApp;
+    
+    loadAdminData();
+    initDefaultData();
+    
+    console.log('🏪 Super Admin ishga tushdi!');
+    console.log('Login: admin | Parol: admin123');
+    console.log('📸 Rasm yuklash tayyor!');
+    console.log('Restoranlar:', adminData.restaurants.length);
+    console.log('Adminlar:', adminData.admins.length);
+    console.log('Kuryerlar:', adminData.couriers.length);
+    console.log('Buyurtmalar:', adminData.orders.length);
+    
+    authPage = getEl('authPage');
+    adminApp = getEl('adminApp');
+    courierApp = getEl('courierApp');
+    
+    // Login holatini tekshirish
+    if (adminData.currentAdmin) {
+        showAdminApp();
+    } else if (adminData.currentCourier) {
+        showCourierApp();
+    } else {
+        if (authPage) {
+            authPage.classList.add('active');
+            authPage.style.display = 'flex';
+        }
+        if (adminApp) {
+            adminApp.classList.remove('active');
+            adminApp.style.display = 'none';
+        }
+        if (courierApp) {
+            courierApp.classList.remove('active');
+            courierApp.style.display = 'none';
+        }
+    }
+}
+
+// DOM yuklanganda ishga tushirish
+if (document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    document.onreadystatechange = function() {
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            init();
+        }
+    };
+}
+
+// Enter tugmasi
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        var active = document.activeElement;
+        if (active && (active.id === 'adminLogin' || active.id === 'adminPassword')) {
+            adminLogin();
+        }
+    }
+});
