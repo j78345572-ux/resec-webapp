@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🍕 FoodExpress</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- ===== CSS ===== -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ==========================================
+    AUTH PAGE
+    ========================================== -->
+    <div id="authPage" class="active">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="logo">🍕</div>
+                <div class="title">FoodExpress</div>
+                <div class="sub">Onlayn restoran yetkazib berish</div>
+            </div>
+            <div class="auth-body" id="authBody">
+                <!-- Login -->
+                <div id="loginForm">
+                    <div class="input-group">
+                        <span class="icon"><i class="fas fa-user"></i></span>
+                        <input type="text" id="loginName" placeholder="Ismingiz">
+                    </div>
+                    <div class="input-group">
+                        <span class="icon"><i class="fas fa-phone"></i></span>
+                        <input type="tel" id="loginPhone" placeholder="+998 90 123 45 67">
+                    </div>
+                    <button class="btn-primary" onclick="handleLogin()">Kirish</button>
+                    <div class="divider"><span>yoki</span></div>
+                    <div class="social-login">
+                        <button class="telegram" onclick="loginWithTelegram()"><i class="fab fa-telegram-plane"></i></button>
+                        <button class="google"><i class="fab fa-google"></i></button>
+                    </div>
+                    <button class="switch-btn" onclick="showRegister()">Ro'yxatdan o'tish →</button>
+                </div>
+
+                <!-- Register -->
+                <div id="registerForm" style="display:none;">
+                    <div class="input-group">
+                        <span class="icon"><i class="fas fa-user"></i></span>
+                        <input type="text" id="regName" placeholder="Ismingiz">
+                    </div>
+                    <div class="input-group">
+                        <span class="icon"><i class="fas fa-phone"></i></span>
+                        <input type="tel" id="regPhone" placeholder="+998 90 123 45 67">
+                    </div>
+                    <div class="input-group">
+                        <span class="icon"><i class="fas fa-lock"></i></span>
+                        <input type="password" id="regPassword" placeholder="Parol">
+                    </div>
+                    <button class="btn-primary" onclick="handleRegister()">Ro'yxatdan o'tish</button>
+                    <button class="switch-btn" onclick="showLogin()">← Kirish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    MAIN APP
+    ========================================== -->
+    <div id="mainApp">
+
+        <!-- HEADER -->
+        <div class="app-header">
+            <div class="top">
+                <div class="greeting">
+                    <strong id="userName">Mehmon</strong>
+                    <span>Bugun qanday taom istaysiz?</span>
+                </div>
+                <div class="actions">
+                    <button onclick="showCheckout()">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span class="badge" id="cartBadge">0</span>
+                    </button>
+                    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="location-bar" onclick="detectLocation()">
+                <div class="icon"><i class="fas fa-location-dot"></i></div>
+                <div class="info">
+                    <div class="label">Yetkazish manzili</div>
+                    <div class="address" id="userAddress">Manzilni tanlang</div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="search-wrap">
+                <span class="icon"><i class="fas fa-search"></i></span>
+                <input type="text" placeholder="Restoran yoki taom qidirish..." id="searchInput" oninput="handleSearch(this.value)">
+            </div>
+        </div>
+
+        <!-- ===== RESTAURANTS LIST (Yandex Eats style) ===== -->
+        <div class="restaurants-section" id="restaurantsSection">
+            <div class="section-header">
+                <div class="section-title">🏪 Restoranlar</div>
+                <span class="section-link" onclick="showAllRestaurants()">Hammasi →</span>
+            </div>
+            <div class="restaurants-grid" id="restaurantsGrid"></div>
+        </div>
+
+        <!-- ===== PROMO BANNERS ===== -->
+        <div class="promo-section">
+            <div class="promo-scroll">
+                <div class="promo-card p1">
+                    <span class="promo-tag">🔥 Aksiya</span>
+                    <div class="promo-title">Birinchi buyurtma -20%</div>
+                    <div class="promo-desc">Promokod: BIRINCHI</div>
+                </div>
+                <div class="promo-card p2">
+                    <span class="promo-tag">🚕 Bepul</span>
+                    <div class="promo-title">100 000 so'mdan yuqori</div>
+                    <div class="promo-desc">Yetkazish bepul!</div>
+                </div>
+                <div class="promo-card p3">
+                    <span class="promo-tag">🎁 Kombo</span>
+                    <div class="promo-title">3 taom + 1 ichimlik</div>
+                    <div class="promo-desc">Atigi 75 000 so'm</div>
+                </div>
+                <div class="promo-card p4">
+                    <span class="promo-tag">⭐ Bonus</span>
+                    <div class="promo-title">Har buyurtmada 5%</div>
+                    <div class="promo-desc">Bonus ballar to'planadi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== RESTAURANT DETAIL PAGE ===== -->
+        <div id="restaurantDetail" style="display:none;">
+            <div class="restaurant-detail-header">
+                <button class="back-btn" onclick="closeRestaurantDetail()"><i class="fas fa-arrow-left"></i></button>
+                <div class="restaurant-detail-info" id="restaurantDetailInfo"></div>
+            </div>
+            <div class="restaurant-menu" id="restaurantMenu"></div>
+        </div>
+
+        <!-- ===== PAGES ===== -->
+        <div class="page" id="page-orders">
+            <div class="page-title">📋 Buyurtmalarim</div>
+            <div id="activeOrders"></div>
+            <div class="section-title" style="font-size:16px;margin-top:16px;">📜 Tarix</div>
+            <div id="ordersList"></div>
+        </div>
+
+        <div class="page" id="page-profile">
+            <div class="profile-card">
+                <div class="avatar" id="profileAvatar">👤</div>
+                <div class="name" id="profileName">Mehmon</div>
+                <div class="phone" id="profilePhone">Telefon qo'shilmagan</div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="value" id="statOrders">0</div>
+                        <div class="label">Buyurtma</div>
+                    </div>
+                    <div class="stat">
+                        <div class="value" id="statSpent">0</div>
+                        <div class="label">Sarflangan</div>
+                    </div>
+                    <div class="stat">
+                        <div class="value" id="statBonus">0</div>
+                        <div class="label">Bonus</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CART FLOAT ===== -->
+    <div class="cart-float" id="cartFloat">
+        <div class="left">
+            <div class="count" id="floatCount">0</div>
+            <div class="info">
+                <div class="label">Savat</div>
+                <div class="total" id="floatTotal">0 so'm</div>
+            </div>
+        </div>
+        <div class="right">
+            <button onclick="showCheckout()">Buyurtma</button>
+        </div>
+    </div>
+
+    <!-- ===== CHECKOUT SHEET ===== -->
+    <div class="sheet-overlay" id="checkoutSheet">
+        <div class="sheet">
+            <div class="handle"></div>
+            <div class="header">
+                <div class="title">🛒 Savat</div>
+                <button class="close" onclick="closeSheet('checkoutSheet')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="cartItemsList"></div>
+            <div class="cart-total">
+                Jami: <span id="checkoutTotal">0 so'm</span>
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="tel" id="checkoutPhone" placeholder="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <textarea id="checkoutAddress" rows="2" placeholder="To'liq manzilni kiriting"></textarea>
+            </div>
+            <div class="form-group">
+                <label>💳 To'lov usuli</label>
+                <select id="checkoutPayment">
+                    <option value="cash">💵 Naqd pul</option>
+                    <option value="click">💳 Click</option>
+                    <option value="payme">💳 Payme</option>
+                </select>
+            </div>
+            <button class="btn-checkout" onclick="placeOrder()">✅ Buyurtmani rasmiylashtirish</button>
+        </div>
+    </div>
+
+    <!-- ===== ORDER DETAIL SHEET ===== -->
+    <div class="sheet-overlay" id="orderDetailSheet">
+        <div class="sheet">
+            <div class="handle"></div>
+            <div class="header">
+                <div class="title" id="orderDetailTitle">📦 Buyurtma #0000</div>
+                <button class="close" onclick="closeSheet('orderDetailSheet')"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="order-timeline" id="orderTimeline">
+                <div class="timeline-step active" data-step="new">
+                    <div class="step-icon"><i class="fas fa-clock"></i></div>
+                    <div class="step-info"><div class="step-title">Yangi</div><div class="step-time" id="timeNew">-</div></div>
+                </div>
+                <div class="timeline-step" data-step="ready">
+                    <div class="step-icon"><i class="fas fa-fire"></i></div>
+                    <div class="step-info"><div class="step-title">Tayyorlanmoqda</div><div class="step-time" id="timeReady">-</div></div>
+                </div>
+                <div class="timeline-step" data-step="delivering">
+                    <div class="step-icon"><i class="fas fa-truck"></i></div>
+                    <div class="step-info"><div class="step-title">Yo'lda</div><div class="step-time" id="timeDelivering">-</div></div>
+                </div>
+                <div class="timeline-step" data-step="delivered">
+                    <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="step-info"><div class="step-title">Yetkazildi</div><div class="step-time" id="timeDelivered">-</div></div>
+                </div>
+            </div>
+            <div id="courierLocation" style="display:none;margin:12px 0;">
+                <div style="background:var(--surface-2);border-radius:var(--radius);padding:12px;text-align:center;">
+                    <div style="font-size:14px;font-weight:700;">🚕 Kuryer lokatsiyasi</div>
+                    <div id="courierCoords" style="font-size:13px;color:var(--text-3);margin-top:4px;">Yuklanmoqda...</div>
+                    <div id="courierMap" style="height:150px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:var(--radius);margin-top:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">
+                        <i class="fas fa-map-marked-alt" style="font-size:32px;margin-right:8px;"></i>
+                        <span>Kuryer xaritada</span>
+                    </div>
+                </div>
+            </div>
+            <div style="background:var(--surface-2);border-radius:var(--radius);padding:12px;margin-top:8px;">
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span style="color:var(--text-3);">📦 Taomlar</span>
+                    <span id="orderDetailItems" style="font-weight:600;">-</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;">
+                    <span style="color:var(--text-3);">💰 Jami</span>
+                    <span id="orderDetailTotal" style="font-weight:800;color:var(--primary);">-</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px;">
+                    <span style="color:var(--text-3);">📍 Manzil</span>
+                    <span id="orderDetailAddress" style="font-weight:600;text-align:right;max-width:60%;">-</span>
+                </div>
+            </div>
+            <div id="orderRating" style="display:none;margin-top:12px;">
+                <div style="text-align:center;font-size:14px;font-weight:700;margin-bottom:8px;">⭐ Buyurtmani baholang</div>
+                <div style="display:flex;justify-content:center;gap:8px;font-size:32px;">
+                    <span onclick="rateOrder(1)" style="cursor:pointer;">☆</span>
+                    <span onclick="rateOrder(2)" style="cursor:pointer;">☆</span>
+                    <span onclick="rateOrder(3)" style="cursor:pointer;">☆</span>
+                    <span onclick="rateOrder(4)" style="cursor:pointer;">☆</span>
+                    <span onclick="rateOrder(5)" style="cursor:pointer;">☆</span>
+                </div>
+                <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:4px;">Baholash uchun yulduzchani bosing</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB BAR ===== -->
+    <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="home" onclick="switchTab('home')">
+            <span class="icon"><i class="fas fa-home"></i></span>
+            <span>Bosh</span>
+        </button>
+        <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">
+            <span class="icon"><i class="fas fa-receipt"></i></span>
+            <span>Buyurtmalar</span>
+            <span class="badge" id="ordersBadge"></span>
+        </button>
+        <button class="tab-btn" data-tab="profile" onclick="switchTab('profile')">
+            <span class="icon"><i class="fas fa-user"></i></span>
+            <span>Profil</span>
+        </button>
+    </div>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script src="app.js"></script>
+
+</body>
+</html>

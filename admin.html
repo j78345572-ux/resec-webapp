@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏪 Super Admin</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- ===== CSS ===== -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== AUTH PAGE ===== -->
+    <div id="authPage" class="active">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="logo">🏪</div>
+                <div class="title">Super Admin</div>
+                <div class="sub">Restoran boshqaruv tizimi</div>
+            </div>
+            <div class="auth-body">
+                <div class="input-group">
+                    <span class="icon"><i class="fas fa-user"></i></span>
+                    <input type="text" id="adminLogin" placeholder="Login" autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <span class="icon"><i class="fas fa-lock"></i></span>
+                    <input type="password" id="adminPassword" placeholder="Parol" autocomplete="current-password">
+                </div>
+                <button class="btn-primary" onclick="adminLogin()">Kirish</button>
+                <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-3);">
+                    Login: admin | Parol: admin123
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ADMIN APP ===== -->
+    <div id="adminApp">
+
+        <!-- HEADER -->
+        <div class="admin-header">
+            <div>
+                <div class="logo">🏪 <span>Super Admin</span></div>
+                <div class="restaurant-info" id="headerRestaurant">
+                    <strong id="currentRestaurantName">Barcha restoranlar</strong>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn-header-primary" onclick="switchPage('dashboard')">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </button>
+                <button class="btn-header-success" onclick="showAddRestaurant()">
+                    <i class="fas fa-plus"></i> Restoran
+                </button>
+                <button class="btn-header-warning" onclick="showAddAdmin()">
+                    <i class="fas fa-user-plus"></i> Admin
+                </button>
+                <button class="btn-header-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Chiqish
+                </button>
+            </div>
+        </div>
+
+        <!-- NAV -->
+        <div class="admin-nav">
+            <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+            <button class="nav-item" data-page="restaurants" onclick="switchPage('restaurants')">
+                <i class="fas fa-store"></i> Restoranlar
+            </button>
+            <button class="nav-item" data-page="admins" onclick="switchPage('admins')">
+                <i class="fas fa-user-shield"></i> Adminlar
+            </button>
+            <button class="nav-item" data-page="couriers" onclick="switchPage('couriers')">
+                <i class="fas fa-truck"></i> Kuryerlar
+            </button>
+            <button class="nav-item" data-page="orders" onclick="switchPage('orders')">
+                <i class="fas fa-receipt"></i> Buyurtmalar
+            </button>
+            <button class="nav-item" data-page="menu" onclick="switchPage('menu')">
+                <i class="fas fa-utensils"></i> Menyu
+            </button>
+            <button class="nav-item" data-page="broadcast" onclick="switchPage('broadcast')">
+                <i class="fas fa-bullhorn"></i> Xabar
+            </button>
+            <button class="nav-item" data-page="settings" onclick="switchPage('settings')">
+                <i class="fas fa-cog"></i> Sozlamalar
+            </button>
+        </div>
+
+        <!-- ===== PAGES ===== -->
+        <!-- Dashboard -->
+        <div class="admin-page active" id="page-dashboard">
+            <div class="page-title"><i class="fas fa-chart-pie" style="color:var(--primary);"></i> Dashboard</div>
+            <div class="stats-grid">
+                <div class="stat-card"><div class="icon"><i class="fas fa-store"></i></div><div class="value" id="statRestaurants">0</div><div class="label">🏪 Restoranlar</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-user-shield"></i></div><div class="value" id="statAdmins">0</div><div class="label">👤 Adminlar</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-shopping-bag"></i></div><div class="value" id="statOrders">0</div><div class="label">📦 Jami buyurtmalar</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-money-bill"></i></div><div class="value" id="statRevenue">0</div><div class="label">💰 Jami daromad</div></div>
+            </div>
+            <div class="page-title" style="font-size:17px;margin-top:4px;">📋 So'nggi buyurtmalar</div>
+            <div class="table-wrap" id="recentOrders"></div>
+        </div>
+
+        <!-- Restaurants -->
+        <div class="admin-page" id="page-restaurants">
+            <div class="page-title"><i class="fas fa-store" style="color:var(--primary);"></i> Restoranlar</div>
+            <button class="btn-primary" onclick="showAddRestaurant()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi restoran qo'shish
+            </button>
+            <div id="restaurantsList"></div>
+        </div>
+
+        <!-- Admins -->
+        <div class="admin-page" id="page-admins">
+            <div class="page-title"><i class="fas fa-user-shield" style="color:var(--primary);"></i> Adminlar</div>
+            <button class="btn-primary" onclick="showAddAdmin()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi admin qo'shish
+            </button>
+            <div class="table-wrap" id="adminsList">
+                <div class="row header"><span>Login</span><span>Restoran</span><span>Rol</span><span>Holat</span></div>
+            </div>
+        </div>
+
+        <!-- Couriers -->
+        <div class="admin-page" id="page-couriers">
+            <div class="page-title"><i class="fas fa-truck" style="color:var(--primary);"></i> Kuryerlar</div>
+            <button class="btn-primary" onclick="showAddCourier()" style="margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Yangi kuryer qo'shish
+            </button>
+            <div class="table-wrap" id="couriersList">
+                <div class="row header"><span>#ID</span><span>Ism / Restoran</span><span>Telefon</span><span>Holat</span><span>Lokatsiya</span><span>Amallar</span></div>
+            </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="admin-page" id="page-orders">
+            <div class="page-title"><i class="fas fa-receipt" style="color:var(--primary);"></i> Buyurtmalar</div>
+            <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+                <button class="btn-secondary" onclick="filterOrders('all')" style="padding:8px 14px;font-size:12px;">Hammasi</button>
+                <button class="btn-secondary" onclick="filterOrders('new')" style="padding:8px 14px;font-size:12px;">🆕 Yangi</button>
+                <button class="btn-secondary" onclick="filterOrders('ready')" style="padding:8px 14px;font-size:12px;">🔥 Tayyor</button>
+                <button class="btn-secondary" onclick="filterOrders('delivering')" style="padding:8px 14px;font-size:12px;">🚕 Yo'lda</button>
+                <button class="btn-secondary" onclick="filterOrders('delivered')" style="padding:8px 14px;font-size:12px;">✅ Yetkazildi</button>
+            </div>
+            <div class="table-wrap" id="ordersList">
+                <div class="row header"><span>#ID</span><span>Restoran / Mijoz</span><span>Summa</span><span>Holat</span></div>
+            </div>
+        </div>
+
+        <!-- Menu -->
+        <div class="admin-page" id="page-menu">
+            <div class="page-title"><i class="fas fa-utensils" style="color:var(--primary);"></i> Menyu boshqaruvi</div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                <select id="menuRestaurantSelect" onchange="renderMenu()" style="padding:10px 16px;border:2px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--surface);">
+                    <option value="">Restoran tanlang</option>
+                </select>
+                <button class="btn-primary" onclick="showAddFood()">
+                    <i class="fas fa-plus"></i> Taom qo'shish
+                </button>
+            </div>
+            <div id="menuList"></div>
+        </div>
+
+        <!-- Broadcast -->
+        <div class="admin-page" id="page-broadcast">
+            <div class="page-title"><i class="fas fa-bullhorn" style="color:var(--primary);"></i> Xabar yuborish</div>
+            <div class="form-group">
+                <label>📢 Xabar matni</label>
+                <textarea id="broadcastText" rows="6" placeholder="Barcha foydalanuvchilarga yuboriladigan xabar..."></textarea>
+            </div>
+            <button class="btn-primary" onclick="sendBroadcast()">
+                <i class="fas fa-paper-plane"></i> Yuborish
+            </button>
+        </div>
+
+        <!-- Settings -->
+        <div class="admin-page" id="page-settings">
+            <div class="page-title"><i class="fas fa-cog" style="color:var(--primary);"></i> Sozlamalar</div>
+            <div class="form-group">
+                <label>🏪 Bosh restoran nomi</label>
+                <input type="text" id="settingRestaurant" value="FoodExpress">
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="text" id="settingPhone" value="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <input type="text" id="settingAddress" value="Toshkent sh., Chilonzor">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>🚕 Yetkazish narxi</label>
+                    <input type="number" id="settingDelivery" value="10000">
+                </div>
+                <div class="form-group">
+                    <label>💰 Bepul yetkazish (so'm)</label>
+                    <input type="number" id="settingFreeFrom" value="100000">
+                </div>
+            </div>
+            <button class="btn-primary" onclick="saveSettings()">
+                <i class="fas fa-save"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+    <!-- Restaurant Modal -->
+    <div class="modal-overlay" id="restaurantModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="restaurantModalTitle">🏪 Yangi restoran</h3>
+                <button class="close" onclick="closeModal('restaurantModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>🏪 Restoran nomi</label>
+                <input type="text" id="restaurantName" placeholder="Masalan: Oshxona">
+            </div>
+            <div class="form-group">
+                <label>📍 Manzil</label>
+                <input type="text" id="restaurantAddress" placeholder="Toshkent sh., ...">
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="text" id="restaurantPhone" placeholder="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>🖼 Rasm (URL)</label>
+                <input type="text" id="restaurantImage" placeholder="https://example.com/restaurant.jpg">
+            </div>
+            <div class="form-group">
+                <label>⏰ Ish vaqti</label>
+                <input type="text" id="restaurantHours" placeholder="09:00 - 23:00">
+            </div>
+            <input type="hidden" id="restaurantEditId">
+            <button class="btn-primary" onclick="saveRestaurant()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- Food Modal -->
+    <div class="modal-overlay" id="foodModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="foodModalTitle">➕ Yangi taom</h3>
+                <button class="close" onclick="closeModal('foodModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>🍽 Taom nomi</label>
+                <input type="text" id="foodName" placeholder="Masalan: Osh">
+            </div>
+            <div class="form-group">
+                <label>💰 Narxi</label>
+                <input type="number" id="foodPrice" placeholder="35000">
+            </div>
+            <div class="form-group">
+                <label>📂 Kategoriya</label>
+                <input type="text" id="foodCategory" placeholder="Milliy taom">
+            </div>
+            <div class="form-group">
+                <label>📝 Tavsif</label>
+                <textarea id="foodDesc" rows="2" placeholder="Qo'y go'shti, sabzi, guruch"></textarea>
+            </div>
+            <div class="form-group">
+                <label>😊 Emoji</label>
+                <input type="text" id="foodEmoji" placeholder="🍚">
+            </div>
+            <div class="form-group">
+                <label>🖼 Rasm (URL)</label>
+                <input type="text" id="foodImage" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>⭐ Chegirma (%)</label>
+                    <input type="number" id="foodDiscount" value="0">
+                </div>
+                <div class="form-group">
+                    <label>🔢 Mavjudlik</label>
+                    <input type="number" id="foodStock" value="99">
+                </div>
+            </div>
+            <input type="hidden" id="foodEditId">
+            <input type="hidden" id="foodRestaurantId">
+            <button class="btn-primary" onclick="saveFood()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 Yangi admin</h3>
+                <button class="close" onclick="closeModal('adminModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>👤 Login</label>
+                <input type="text" id="adminNewLogin" placeholder="admin_username">
+            </div>
+            <div class="form-group">
+                <label>🔑 Parol</label>
+                <input type="text" id="adminNewPassword" placeholder="password123">
+            </div>
+            <div class="form-group">
+                <label>🏪 Restoran</label>
+                <select id="adminNewRestaurant">
+                    <option value="">Super Admin (barcha)</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="saveAdmin()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- Courier Modal -->
+    <div class="modal-overlay" id="courierModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="courierModalTitle">🚕 Yangi kuryer</h3>
+                <button class="close" onclick="closeModal('courierModal')">✕</button>
+            </div>
+            <div class="form-group">
+                <label>👤 Ism</label>
+                <input type="text" id="courierName" placeholder="Kuryer ismi">
+            </div>
+            <div class="form-group">
+                <label>📞 Telefon</label>
+                <input type="text" id="courierPhone" placeholder="+998 90 123 45 67">
+            </div>
+            <div class="form-group">
+                <label>🔑 Login</label>
+                <input type="text" id="courierLogin" placeholder="courier_username">
+            </div>
+            <div class="form-group">
+                <label>🔒 Parol</label>
+                <input type="text" id="courierPassword" placeholder="password123">
+            </div>
+            <div class="form-group">
+                <label>🏪 Restoran</label>
+                <select id="courierRestaurant"></select>
+            </div>
+            <input type="hidden" id="courierEditId">
+            <button class="btn-primary" onclick="saveCourier()" style="width:100%;">
+                <i class="fas fa-check"></i> Saqlash
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+
+</body>
+</html>
